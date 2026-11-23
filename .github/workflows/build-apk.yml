@@ -1,0 +1,292 @@
+name: Build & Publish Signed Android APK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'android/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'src/appVersion.ts'
+      - 'Dockerfile.android-builder'
+  workflow_dispatch:
+    inputs:
+      release_notes:
+        description: 'Release notes shown in GitHub Release and /version.json (optional)'
+        required: false
+        default: ''
+        type: string
+      update_server_version_json:
+        description: 'Update /version.json inside the live n2sac-web container on this server'
+        required: false
+        default: true
+        type: boolean
+      mark_important:
+        description: 'Mark update as important (prompts native APK download inside the app)'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-apk-release
+  cancel-in-progress: false
+
+env:
+  PUBLIC_RELEASES_REPO: criperrr/n2sac
+  BUILDER_IMAGE: n2sac-android-builder:latest
+  # Production signing certificate SHA-256 fingerprints from /.well-known/assetlinks.json
+  ALLOWED_CERT_SHA256_1: 6d0c2b88de820e61d4b8bbb558920d64a85eaa10c32436136a598fd6b70bcad1
+  ALLOWED_CERT_SHA256_2: 7380dfb721390b3365414a69c2368d0380e433bdfce8fe1dad198eb635f841f1
+
+jobs:
+  build-and-publish-apk:
+    name: Build Signed APK on Server & Publish to criperrr/n2sac Releases
+    runs-on: [self-hosted, linux, x64, n2sac-builder]
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets (without printing values)
+        env:
+          HAS_KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+          HAS_KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD != '' }}
+          HAS_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS != '' }}
+          HAS_KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD != '' }}
+          HAS_GS: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON_BASE64 != '' }}
+        run: |
+          set -euo pipefail
+          for var in HAS_KS HAS_KS_PASS HAS_KEY_ALIAS HAS_KEY_PASS HAS_GS; do
+            if [ "${!var}" != "true" ]; then
+              echo "::error::Missing required GitHub secret (${var}). Run scripts/setup-github-secrets.sh."
+              exit 1
+            fi
+          done
+
+      - name: Ensure Android builder Docker image is up to date
+        run: |
+          set -euo pipefail
+          docker build --network=host -f Dockerfile.android-builder -t "${BUILDER_IMAGE}" .
+
+      - name: Extract app version metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version.trim()")"
+          TAG="v${VERSION}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+          echo "apk_name=n2sac-${VERSION}.apk" >> "${GITHUB_OUTPUT}"
+          echo "Building n²sac ${TAG}"
+
+      - name: Materialize ephemeral signing secrets (mode 600)
+        id: secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          set +x
+          SECRETS_DIR="$(mktemp -d /tmp/n2sac-apk-secrets.XXXXXX)"
+          chmod 700 "${SECRETS_DIR}"
+          echo "dir=${SECRETS_DIR}" >> "${GITHUB_OUTPUT}"
+
+          printf '%s' "${ANDROID_KEYSTORE_BASE64}" | base64 -d > "${SECRETS_DIR}/release.jks"
+          chmod 600 "${SECRETS_DIR}/release.jks"
+
+          printf '%s' "${ANDROID_GOOGLE_SERVICES_JSON_BASE64}" | base64 -d > "${GITHUB_WORKSPACE}/android/app/google-services.json"
+          chmod 600 "${GITHUB_WORKSPACE}/android/app/google-services.json"
+
+          # Pass signing env vars via a 0600 env-file so they never appear in `ps aux` args.
+          {
+            printf 'N2SAC_KEYSTORE_PATH=/run/n2sac-secrets/release.jks\n'
+            printf 'N2SAC_KEYSTORE_PASSWORD=%s\n' "${ANDROID_KEYSTORE_PASSWORD}"
+            printf 'N2SAC_KEY_ALIAS=%s\n' "${ANDROID_KEY_ALIAS}"
+            printf 'N2SAC_KEY_PASSWORD=%s\n' "${ANDROID_KEY_PASSWORD}"
+          } > "${SECRETS_DIR}/signing.env"
+          chmod 600 "${SECRETS_DIR}/signing.env"
+
+      - name: Build signed Release APK inside Docker builder
+        run: |
+          set -euo pipefail
+          HOST_UID="$(id -u)"
+          HOST_GID="$(id -g)"
+          docker run --rm --network=host \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -v "${{ steps.secrets.outputs.dir }}:/run/n2sac-secrets:ro" \
+            -v n2sac-gradle-cache:/root/.gradle \
+            -v n2sac-npm-cache:/root/.npm \
+            --env-file "${{ steps.secrets.outputs.dir }}/signing.env" \
+            -e HOST_UID="${HOST_UID}" \
+            -e HOST_GID="${HOST_GID}" \
+            -w /workspace \
+            "${BUILDER_IMAGE}" \
+            bash -lc '
+              set -euo pipefail
+              trap '\''chown -R "${HOST_UID}:${HOST_GID}" /workspace 2>/dev/null || true'\'' EXIT
+              cp /workspace/android/app/build.gradle /tmp/build.gradle.orig
+              cd /workspace
+              npm ci --prefer-offline
+              npm run build
+              unset N2SAC_DEV_SERVER_URL
+              npx cap sync android
+              # Work around @capacitor/background-runner install_libs.js splicing dirs into line 5
+              cp /tmp/build.gradle.orig /workspace/android/app/build.gradle
+              cd /workspace/android
+              ./gradlew --no-daemon assembleRelease
+            '
+
+      - name: Verify APK signature against production assetlinks.json fingerprints & compute SHA-256
+        id: verify
+        run: |
+          set -euo pipefail
+          APK_SRC="android/app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "${APK_SRC}" ]; then
+            echo "::error::Release APK not found at ${APK_SRC}"
+            exit 1
+          fi
+
+          CERT_OUTPUT="$(docker run --rm --network=none \
+            -v "${GITHUB_WORKSPACE}:/workspace:ro" \
+            -w /workspace \
+            "${BUILDER_IMAGE}" \
+            apksigner verify --verbose --print-certs "${APK_SRC}")"
+          echo "${CERT_OUTPUT}"
+
+          SIGNER_SHA256="$(printf '%s\n' "${CERT_OUTPUT}" | grep -m1 'Signer #1 certificate SHA-256 digest:' | awk '{print tolower($NF)}')"
+          echo "Detected signer SHA-256: ${SIGNER_SHA256}"
+          if [ "${SIGNER_SHA256}" != "${ALLOWED_CERT_SHA256_1}" ] && [ "${SIGNER_SHA256}" != "${ALLOWED_CERT_SHA256_2}" ]; then
+            echo "::error::APK signing certificate (${SIGNER_SHA256}) does NOT match production assetlinks.json!"
+            exit 1
+          fi
+
+          OUT_DIR="${RUNNER_TEMP}/release-artifacts"
+          mkdir -p "${OUT_DIR}"
+          APK_NAME="${{ steps.meta.outputs.apk_name }}"
+          cp "${APK_SRC}" "${OUT_DIR}/${APK_NAME}"
+          (cd "${OUT_DIR}" && sha256sum "${APK_NAME}" > "${APK_NAME}.sha256")
+          APK_SHA256="$(awk '{print $1}' "${OUT_DIR}/${APK_NAME}.sha256")"
+
+          echo "out_dir=${OUT_DIR}" >> "${GITHUB_OUTPUT}"
+          echo "apk_sha256=${APK_SHA256}" >> "${GITHUB_OUTPUT}"
+          echo "Verified APK SHA-256: ${APK_SHA256}"
+
+      - name: Publish signed APK + SHA-256 to public GitHub Releases (criperrr/n2sac)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.meta.outputs.tag }}"
+          APK_NAME="${{ steps.meta.outputs.apk_name }}"
+          OUT_DIR="${{ steps.verify.outputs.out_dir }}"
+          NOTES="${{ inputs.release_notes }}"
+
+          if [ -z "${NOTES}" ]; then
+            NOTES="$(node -e 'try { const d = require("./public/version.json"); console.log(d.notes || ""); } catch { console.log(""); }')"
+          fi
+          if [ -z "${NOTES}" ]; then
+            NOTES="Release oficial n²sac ${TAG} (APK assinado v2/v3/v4 + checksum SHA-256)."
+          fi
+
+          if ! gh release view "${TAG}" --repo "${PUBLIC_RELEASES_REPO}" >/dev/null 2>&1; then
+            gh release create "${TAG}" \
+              --repo "${PUBLIC_RELEASES_REPO}" \
+              --title "n²sac ${TAG}" \
+              --notes "${NOTES}" \
+              --latest
+          else
+            gh release edit "${TAG}" --repo "${PUBLIC_RELEASES_REPO}" --latest --notes "${NOTES}"
+          fi
+
+          gh release upload "${TAG}" --repo "${PUBLIC_RELEASES_REPO}" --clobber \
+            "${OUT_DIR}/${APK_NAME}.sha256" "${OUT_DIR}/${APK_NAME}"
+
+      - name: Verify public unauthenticated APK download (HTTP 200)
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.meta.outputs.tag }}"
+          APK_NAME="${{ steps.meta.outputs.apk_name }}"
+          APK_URL="https://github.com/${PUBLIC_RELEASES_REPO}/releases/download/${TAG}/${APK_NAME}"
+          SHA_URL="${APK_URL}.sha256"
+
+          HTTP_CODE="$(curl -sSLo /dev/null -w '%{http_code}' --max-time 20 "${APK_URL}")"
+          echo "Public APK download HTTP status: ${HTTP_CODE} (${APK_URL})"
+          if [ "${HTTP_CODE}" != "200" ]; then
+            echo "::error::Public APK URL returned HTTP ${HTTP_CODE} instead of 200!"
+            exit 1
+          fi
+
+          REMOTE_SHA="$(curl -fsSL --max-time 15 "${SHA_URL}" | awk '{print $1}')"
+          if [ "${REMOTE_SHA}" != "${{ steps.verify.outputs.apk_sha256 }}" ]; then
+            echo "::error::Remote SHA-256 mismatch! expected=${{ steps.verify.outputs.apk_sha256 }} got=${REMOTE_SHA}"
+            exit 1
+          fi
+          echo "Verified public SHA-256 matches: ${REMOTE_SHA}"
+
+      - name: Update live /version.json on local n2sac-web container
+        if: ${{ inputs.update_server_version_json == true || github.event_name == 'push' }}
+        run: |
+          set -euo pipefail
+          if ! docker ps --format '{{.Names}}' | grep -qx 'n2sac-web'; then
+            echo "::warning::Container n2sac-web not running on this host; skipping live /version.json update."
+            exit 0
+          fi
+
+          VERSION="${{ steps.meta.outputs.version }}"
+          TAG="${{ steps.meta.outputs.tag }}"
+          APK_NAME="${{ steps.meta.outputs.apk_name }}"
+          APK_SHA256="${{ steps.verify.outputs.apk_sha256 }}"
+          APK_URL="https://github.com/${PUBLIC_RELEASES_REPO}/releases/download/${TAG}/${APK_NAME}"
+          BUILD_ID="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          IMPORTANT="${{ inputs.mark_important }}"
+          [ -z "${IMPORTANT}" ] && IMPORTANT="true"
+          NOTES="${{ inputs.release_notes }}"
+
+          TMP_VER="$(mktemp)"
+          trap 'rm -f "${TMP_VER}"' EXIT
+          docker cp n2sac-web:/usr/share/nginx/html/version.json "${TMP_VER}" || echo '{}' > "${TMP_VER}"
+
+          VERSION="${VERSION}" BUILD_ID="${BUILD_ID}" APK_URL="${APK_URL}" APK_SHA256="${APK_SHA256}" \
+          IMPORTANT="${IMPORTANT}" NOTES="${NOTES}" TMP_VER="${TMP_VER}" \
+          node -e '
+            const fs = require("fs");
+            const p = process.env.TMP_VER;
+            let cur = {};
+            try { cur = JSON.parse(fs.readFileSync(p, "utf8")); } catch {}
+            const next = {
+              ...cur,
+              version: process.env.VERSION,
+              buildId: process.env.BUILD_ID,
+              channel: cur.channel || "ota",
+              important: process.env.IMPORTANT === "true",
+              apkVersion: process.env.VERSION,
+              apkUrl: process.env.APK_URL,
+              apkSha256: process.env.APK_SHA256,
+              notes: process.env.NOTES || cur.notes || "",
+            };
+            fs.writeFileSync(p, JSON.stringify(next, null, 2) + "\n", "utf8");
+          '
+
+          docker cp "${TMP_VER}" n2sac-web:/usr/share/nginx/html/version.json
+          echo "Updated live /version.json:"
+          cat "${TMP_VER}"
+
+      - name: Securely shred ephemeral signing secrets
+        if: always()
+        run: |
+          set +e
+          if [ -n "${{ steps.secrets.outputs.dir }}" ] && [ -d "${{ steps.secrets.outputs.dir }}" ]; then
+            find "${{ steps.secrets.outputs.dir }}" -type f -exec shred -u {} + 2>/dev/null || true
+            rm -rf "${{ steps.secrets.outputs.dir }}"
+          fi
+          if [ -f "${GITHUB_WORKSPACE}/android/app/google-services.json" ]; then
+            shred -u "${GITHUB_WORKSPACE}/android/app/google-services.json" 2>/dev/null || rm -f "${GITHUB_WORKSPACE}/android/app/google-services.json"
+          fi

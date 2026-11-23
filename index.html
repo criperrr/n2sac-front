@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0D0D0D" />
+    <meta name="description" content="n²sac • CTI Colégio Técnico Industrial UNESP Bauru" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Non-blocking: the first paint (and the boot splash) must not wait for Google Fonts. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Nunito:wght@500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
+    <title>n²sac</title>
+    <style>
+      /* Boot splash (OTA reload): M3 Expressive loading indicator, pure CSS so it runs before the
+         app bundle exists. The spin is a transform animation (compositor): it keeps turning even
+         while the new bundle is being compiled on the main thread. */
+      #n2sac-boot {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: var(--n2b-bg, #0d0d0d);
+        color: var(--n2b-fg, #c4c7c5);
+        font: 600 0.92rem/1.3 Outfit, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        letter-spacing: 0.01em;
+        transition: opacity 280ms cubic-bezier(0.2, 0, 0, 1);
+      }
+      html.n2sac-booting #n2sac-boot { display: flex; }
+      #n2sac-boot.n2b-in { animation: n2b-fade-in 200ms cubic-bezier(0.2, 0, 0, 1) both; }
+      #n2sac-boot.n2b-out { opacity: 0; pointer-events: none; }
+      #n2sac-boot .n2b-ctr {
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        background: var(--n2b-ctr, #1f3b30);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #n2sac-boot svg { width: 76px; height: 76px; animation: n2b-spin 3600ms linear infinite; }
+      #n2sac-boot path { fill: var(--n2b-on, #b8f0d2); transform-origin: 50px 50px; }
+      @keyframes n2b-spin { to { transform: rotate(360deg); } }
+      @keyframes n2b-fade-in { from { opacity: 0; } }
+      @media (prefers-reduced-motion: reduce) { #n2sac-boot path { animation: none !important; } }
+    </style>
+  </head>
+  <body>
+    <div id="n2sac-boot" role="progressbar" aria-live="polite" data-no-size-morph>
+      <div class="n2b-ctr"><svg viewBox="0 0 100 100" aria-hidden="true"><path id="n2sac-boot-shape" d="M50 17A33 33 0 1 1 49.99 17Z" /></svg></div>
+      <span id="n2sac-boot-label">Atualizando</span>
+    </div>
+    <script>
+      (function () {
+        var KEY = 'n2sac_boot_splash';
+        var MORPH_MS = 520;
+        var STEPS = 12; // multiple of 4: 12 quarter turns = 3 full turns, so the loop is seamless
+        var EASE = 'cubic-bezier(0.34, 1.32, 0.64, 1)'; // light spring overshoot per morph
+
+        /* Random shape order: never the same figure twice in a row (also across the loop seam). */
+        function randomOrder(count) {
+          var order = [];
+          var prev = -1;
+          for (var i = 0; i < STEPS; i++) {
+            var n;
+            do { n = Math.floor(Math.random() * count); } while (n === prev || (i === STEPS - 1 && n === order[0]));
+            order.push(n);
+            prev = n;
+          }
+          return order;
+        }
+
+        function show(p) {
+          var el = document.getElementById('n2sac-boot');
+          if (!el || !p) return;
+          var s = el.style;
+          if (p.bg) s.setProperty('--n2b-bg', p.bg);
+          if (p.fg) s.setProperty('--n2b-fg', p.fg);
+          if (p.container) s.setProperty('--n2b-ctr', p.container);
+          if (p.onContainer) s.setProperty('--n2b-on', p.onContainer);
+          var label = document.getElementById('n2sac-boot-label');
+          if (label && p.label) label.textContent = p.label;
+          var shape = document.getElementById('n2sac-boot-shape');
+          var paths = p.paths || [];
+          if (shape && paths.length > 1) {
+            var order = randomOrder(paths.length);
+            var frames = [];
+            for (var i = 0; i <= STEPS; i++) {
+              var idx = order[i % STEPS];
+              frames.push({ d: 'path("' + paths[idx] + '")', transform: 'rotate(' + i * 90 + 'deg)', easing: EASE });
+            }
+            shape.setAttribute('d', paths[order[0]]);
+            try {
+              if (shape.animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                shape.animate(frames, { duration: STEPS * MORPH_MS, iterations: Infinity });
+              }
+            } catch (e) { /* no CSS `d` animation: the figure still spins */ }
+          }
+          el.classList.remove('n2b-out');
+          el.classList.add('n2b-in');
+          document.documentElement.classList.add('n2sac-booting');
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta && p.bg) meta.setAttribute('content', p.bg);
+        }
+
+        window.__n2sacShowBoot = show;
+        window.__n2sacBootDone = function () {
+          var el = document.getElementById('n2sac-boot');
+          if (!el || !document.documentElement.classList.contains('n2sac-booting')) return;
+          el.classList.add('n2b-out');
+          setTimeout(function () {
+            document.documentElement.classList.remove('n2sac-booting');
+            el.classList.remove('n2b-out', 'n2b-in');
+            var shape = document.getElementById('n2sac-boot-shape');
+            if (shape && shape.getAnimations) shape.getAnimations().forEach(function (a) { a.cancel(); });
+          }, 300);
+        };
+
+        /* Booting right after an OTA reload: show the splash before the first paint. */
+        try {
+          var raw = sessionStorage.getItem(KEY);
+          if (raw) {
+            sessionStorage.removeItem(KEY);
+            var p = JSON.parse(raw);
+            if (p && Date.now() - p.at < 60000) {
+              show(p);
+              document.getElementById('n2sac-boot').classList.remove('n2b-in'); // already on screen
+            }
+          }
+        } catch (e) { /* storage unavailable: boot without splash */ }
+      })();
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

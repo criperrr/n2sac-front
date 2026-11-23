@@ -1,0 +1,10 @@
+{
+  "name": "n²sac",
+  "short_name": "n²sac",
+  "description": "CTI • Colégio Técnico Industrial UNESP Bauru",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111014",
+  "theme_color": "#111014",
+  "orientation": "portrait-primary"
+}

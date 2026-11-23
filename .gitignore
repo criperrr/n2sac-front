@@ -1,0 +1,23 @@
+node_modules/
+dist/
+android/app/build/
+android/build/
+android/.gradle/
+android/capacitor-cordova-android-plugins/build/
+.env
+.env.*
+secrets/
+google-services.json
+*.apk
+*.log
+.DS_Store
+
+# AI agent configurations and local memory (never push to remote)
+.agents/
+.claude/
+.cursor/
+.windsurf/
+.gemini/
+CLAUDE.md
+AGENTS.md
+GEMINI.md

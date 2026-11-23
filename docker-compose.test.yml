@@ -1,0 +1,13 @@
+services:
+  web-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+    image: n2sac-test-web:latest
+    container_name: n2sac-test-web
+    network_mode: host
+    restart: unless-stopped
+    stop_grace_period: 15s
+    volumes:
+      - ./deploy/nginx.test.conf:/etc/nginx/conf.d/default.conf:ro

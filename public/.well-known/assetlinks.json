@@ -1,0 +1,16 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.cti.n2sac",
+      "sha256_cert_fingerprints": [
+        "6D:0C:2B:88:DE:82:0E:61:D4:B8:BB:B5:58:92:0D:64:A8:5E:AA:10:C3:24:36:13:6A:59:8F:D6:B7:0B:CA:D1",
+        "73:80:DF:B7:21:39:0B:33:65:41:4A:69:C2:36:8D:03:80:E4:33:BD:FC:E8:FE:1D:AD:19:8E:B6:35:F8:41:F1"
+      ]
+    }
+  }
+]

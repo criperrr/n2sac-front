@@ -1,0 +1,13 @@
+node_modules/
+android/
+android-aosp-bridge/
+dist/
+.git/
+.github/
+.agents/
+secrets/
+scripts/
+*.apk
+*.log
+.env
+.env.*

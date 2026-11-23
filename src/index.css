@@ -1,0 +1,2064 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100vw;
+  overscroll-behavior-y: none;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--m3-background, #0d0d0d);
+  color: var(--m3-on-background, #f5f5f5);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color 240ms cubic-bezier(0.2, 0, 0, 1),
+    color 240ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Horizontal clipping lives on <html> only: it propagates to the viewport. Setting it on <body>
+ * too turns body into its own scroll container, which breaks the sticky desktop rail. */
+html {
+  overflow-x: hidden;
+}
+
+/* When Material You Redesign is active, switch global typography to Outfit/Nunito */
+html[data-design-system='material-you'],
+html[data-design-system='material-you'] body {
+  font-family: 'Outfit', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* In Default (OpenAI Editorial) Design System, use crisp tabular Inter / Newsreader Serif / JetBrains Mono */
+html[data-design-system='default'] {
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+.openai-serif-display {
+  font-family: 'Newsreader', 'Source Serif Pro', Georgia, ui-serif, serif !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.08 !important;
+}
+
+code {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Responsive Shell Layout */
+.nsac-shell-layout {
+  display: flex;
+  min-height: 100dvh;
+  width: 100%;
+}
+
+.nsac-desktop-rail {
+  --rail-ease: cubic-bezier(0.2, 0, 0, 1);
+  width: 256px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  padding: 18px 14px;
+  display: none;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 100dvh;
+  overflow: hidden;
+  transition:
+    width 320ms var(--rail-ease),
+    padding 320ms var(--rail-ease);
+}
+
+.nsac-desktop-rail.is-collapsed {
+  width: 84px;
+  padding: 18px 12px;
+}
+
+/* Text that collapses horizontally with the rail (labels, brand, button text) */
+.nsac-rail-fade {
+  display: inline-block;
+  min-width: 0;
+  max-width: 220px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 1;
+  transition:
+    max-width 320ms var(--rail-ease),
+    opacity 180ms var(--rail-ease) 80ms;
+}
+
+.is-collapsed .nsac-rail-fade {
+  max-width: 0;
+  opacity: 0;
+  transition:
+    max-width 320ms var(--rail-ease),
+    opacity 120ms var(--rail-ease);
+}
+
+/* Lines that collapse vertically with the rail (e-mail under the class chip) */
+.nsac-rail-fade-block {
+  max-height: 24px;
+  margin-top: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 1;
+  transition:
+    max-height 320ms var(--rail-ease),
+    margin-top 320ms var(--rail-ease),
+    opacity 180ms var(--rail-ease) 80ms;
+}
+
+.is-collapsed .nsac-rail-fade-block {
+  max-height: 0;
+  margin-top: 0;
+  opacity: 0;
+  transition:
+    max-height 320ms var(--rail-ease),
+    margin-top 320ms var(--rail-ease),
+    opacity 120ms var(--rail-ease);
+}
+
+.nsac-rail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 4px 20px 10px;
+  transition: padding 320ms var(--rail-ease);
+}
+
+.is-collapsed .nsac-rail-header {
+  justify-content: center;
+  gap: 0;
+  padding: 8px 0 20px;
+}
+
+.nsac-rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nsac-rail-badge {
+  padding: 12px 14px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+  transition: padding 320ms var(--rail-ease);
+}
+
+.is-collapsed .nsac-rail-badge {
+  padding: 10px 4px;
+}
+
+.nsac-rail-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.is-collapsed .nsac-rail-badge-row {
+  justify-content: center;
+  gap: 0;
+}
+
+.nsac-rail-item {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  transition:
+    background-color 220ms ease,
+    gap 320ms var(--rail-ease),
+    padding 320ms var(--rail-ease);
+}
+
+.is-collapsed .nsac-rail-item {
+  justify-content: center;
+  gap: 0;
+  padding: 10px 0;
+}
+
+.nsac-rail-footer {
+  padding: 12px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: padding 320ms var(--rail-ease);
+}
+
+.is-collapsed .nsac-rail-footer {
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.nsac-rail-refresh {
+  flex: 1 1 auto;
+  min-width: 36px;
+  gap: 6px;
+  padding: 0 12px;
+}
+
+.is-collapsed .nsac-rail-refresh {
+  flex: 0 0 auto;
+  width: 36px;
+  gap: 0;
+  padding: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nsac-desktop-rail,
+  .nsac-desktop-rail * {
+    transition: none !important;
+  }
+}
+
+.nsac-main-viewport {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.nsac-top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-height: 60px;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 14px 6px;
+  background-color: var(--nsac-bar-bg-glass, var(--m3-surface));
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  transform: translateZ(0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nsac-page-content {
+  width: 100%;
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 16px 12px calc(env(safe-area-inset-bottom, 0px) + 104px);
+  overflow-x: hidden;
+}
+
+/* Floating Bottom Navigation Bar on Mobile */
+.nsac-floating-bottom-pill {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  transform: translate3d(-50%, 0, 0);
+  width: calc(100% - 16px);
+  max-width: 480px;
+  height: 66px;
+  border-radius: 9999px;
+  background-color: var(--nsac-pill-bg-glass, var(--m3-surface-container-high));
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  padding: 0 8px;
+  overflow: hidden;
+  z-index: 50;
+}
+
+/* Low-end hardware optimization (<= 4 cores or <= 3GB RAM): eliminate full-screen GPU blur readbacks */
+html.n2sac-low-end .nsac-top-bar,
+html.n2sac-low-end .nsac-floating-bottom-pill,
+html.n2sac-low-end .nsac-chat-menu-scrim {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html.n2sac-low-end .n2sac-crown-halo {
+  animation: none !important;
+}
+html.n2sac-low-end .nsac-top-bar {
+  background-color: color-mix(in srgb, var(--m3-surface) 96%, transparent);
+}
+html.n2sac-low-end .nsac-floating-bottom-pill {
+  background-color: color-mix(in srgb, var(--m3-surface-container-high) 97%, transparent);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+}
+
+@media (min-width: 920px) {
+  .nsac-desktop-rail {
+    display: flex;
+  }
+
+  .nsac-top-bar {
+    display: none !important;
+  }
+
+  .nsac-floating-bottom-pill {
+    display: none;
+  }
+
+  .mobile-only-btn {
+    display: none !important;
+  }
+
+  .nsac-page-content {
+    padding: 22px 24px 48px;
+  }
+}
+
+/*
+ * Page entry = M3 fade through (fallback when the View Transitions API is unavailable):
+ * stays invisible until 35% of progress, then fades in while scaling 92% -> 100%.
+ * Uses the individual `scale` property ending at `none`, so the page never keeps a transform
+ * that would trap `position: fixed` descendants.
+ */
+@keyframes m3FadeThroughIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes m3AxisXForwardIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(28px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes m3AxisXBackwardIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(-28px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.m3-page-transition {
+  animation: m3FadeThroughIn 280ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
+}
+
+.m3-page-axis-x-forward {
+  animation: m3AxisXForwardIn 320ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
+}
+
+.m3-page-axis-x-backward {
+  animation: m3AxisXBackwardIn 320ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
+}
+
+/*
+ * A page that arrived through a View Transition was already animated by the snapshots: it gets no
+ * entry animation of its own and its cards skip the stagger, so the change animates exactly once.
+ * (A rule toggled by html[data-vt] would re-trigger the animation the moment the attribute drops.)
+ */
+.nsac-page-vt .m3-segmented-card,
+.nsac-page-vt .m3-table-row-stagger,
+.m3-page-swipe-next .m3-segmented-card,
+.m3-page-swipe-next .m3-table-row-stagger,
+.m3-page-swipe-prev .m3-segmented-card,
+.m3-page-swipe-prev .m3-table-row-stagger {
+  animation: none;
+}
+
+@keyframes m3SwipeEnterFromRight {
+  from {
+    opacity: 0.35;
+    transform: translate3d(24%, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes m3SwipeEnterFromLeft {
+  from {
+    opacity: 0.35;
+    transform: translate3d(-24%, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.m3-page-swipe-next {
+  animation: m3SwipeEnterFromRight 220ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
+}
+
+.m3-page-swipe-prev {
+  animation: m3SwipeEnterFromLeft 220ms cubic-bezier(0.05, 0.7, 0.1, 1) both;
+}
+
+/* Never block touch/pointer events while a View Transition is animating. */
+::view-transition {
+  pointer-events: none;
+}
+
+/* Staggered List Entry Choreography for Segmented Cards & Table Rows */
+@keyframes m3CardStaggerEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.m3-segmented-card {
+  animation: m3CardStaggerEnter 260ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@keyframes nsacActionMenuIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes nsacActionMenuOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0) scale(0.86);
+  }
+}
+
+@keyframes nsacComposerBannerIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes nsacComposerBannerOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+}
+
+@keyframes nsacReactionPop {
+  from {
+    opacity: 0;
+    transform: scale(0.45) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes nsacReactionBadgeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.35) translateY(5px);
+  }
+  58% {
+    opacity: 1;
+    transform: scale(1.18) translateY(-1px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes nsacEmojiBurstFloat {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.25) rotate(-14deg);
+  }
+  28% {
+    opacity: 1;
+    transform: translate(-50%, -62%) scale(1.35) rotate(8deg);
+  }
+  62% {
+    opacity: 1;
+    transform: translate(-50%, -88%) scale(1.04) rotate(-4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -155%) scale(1.12) rotate(0deg);
+  }
+}
+
+.nsac-action-menu-in {
+  animation: nsacActionMenuIn 260ms var(--m3-spring-fast-spatial, cubic-bezier(0.2, 0.9, 0.25, 1)) both;
+}
+
+.nsac-action-menu-out {
+  animation: nsacActionMenuOut 180ms cubic-bezier(0.3, 0, 0.8, 0.15) both;
+  pointer-events: none;
+}
+
+.nsac-composer-banner-in {
+  animation: nsacComposerBannerIn 220ms var(--m3-spring-fast-spatial, cubic-bezier(0.2, 0.9, 0.25, 1)) both;
+}
+
+.nsac-composer-banner-out {
+  animation: nsacComposerBannerOut 160ms cubic-bezier(0.3, 0, 0.8, 0.15) both;
+  pointer-events: none;
+}
+
+.nsac-reaction-pop {
+  animation: nsacReactionPop 260ms var(--m3-spring-fast-spatial, cubic-bezier(0.2, 0.9, 0.25, 1)) both;
+  transition: transform 150ms var(--m3-spring-fast-spatial, cubic-bezier(0.2, 0.9, 0.25, 1));
+}
+.nsac-reaction-pop:active {
+  transform: scale(1.38);
+}
+
+.nsac-reaction-badge-in {
+  animation: nsacReactionBadgeIn 340ms var(--m3-spring-fast-spatial, cubic-bezier(0.2, 0.9, 0.25, 1)) both;
+  transition: transform 150ms ease, background-color 180ms ease, border-color 180ms ease;
+}
+.nsac-reaction-badge-in:active {
+  transform: scale(0.86);
+}
+
+.nsac-chat-emoji-burst {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  font-size: 2.45rem;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 6;
+  animation: nsacEmojiBurstFloat 820ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.26));
+}
+
+/* Grade reveal count-up & Perfect 10,0 celebration */
+@keyframes nsacGradeSettle {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes nsacTenSuspense {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(245, 197, 66, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(245, 197, 66, 0.08);
+  }
+}
+
+@keyframes nsacPerfectTenPop {
+  0% {
+    transform: scale(0.92);
+  }
+  38% {
+    transform: scale(1.24);
+  }
+  68% {
+    transform: scale(0.96);
+  }
+  86% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes nsacTenShimmer {
+  0% {
+    transform: translateX(-140%) skewX(-22deg);
+  }
+  100% {
+    transform: translateX(240%) skewX(-22deg);
+  }
+}
+
+@keyframes nsacTenSparkle {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(0.4) rotate(0deg);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--tx, 0px), var(--ty, -36px), 0) scale(1.15) rotate(140deg);
+  }
+}
+
+.nsac-grade-settle {
+  animation: nsacGradeSettle 280ms var(--m3-spring-fast-spatial, cubic-bezier(0.2, 0.9, 0.25, 1)) both;
+}
+
+.nsac-ten-suspense {
+  animation: nsacTenSuspense 680ms ease-in-out infinite;
+}
+
+.nsac-perfect-ten-badge {
+  position: relative;
+  overflow: hidden;
+  animation: nsacPerfectTenPop 420ms cubic-bezier(0.16, 1.18, 0.3, 1) both;
+}
+
+.nsac-perfect-ten-badge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 55%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: nsacTenShimmer 950ms ease-out 120ms 1 both;
+  pointer-events: none;
+}
+
+.nsac-ten-sparkle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  margin-top: -3px;
+  border-radius: 2px;
+  pointer-events: none;
+  animation: nsacTenSparkle 860ms cubic-bezier(0.12, 0.9, 0.24, 1) forwards;
+}
+
+@keyframes nsacSunburstAppear {
+  from {
+    opacity: 0;
+    scale: 0.45;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes nsacSunburstSteadySpin {
+  from {
+    transform: rotate(var(--nsac-sun-angle, 0deg));
+  }
+  to {
+    transform: rotate(calc(var(--nsac-sun-angle, 0deg) + 360deg));
+  }
+}
+
+.nsac-ten-sunburst-wrap {
+  animation: nsacSunburstAppear 260ms var(--m3-spring-fast-spatial, cubic-bezier(0.2, 0.9, 0.25, 1)) both;
+}
+
+.nsac-ten-sunburst-steady {
+  animation: nsacSunburstSteadySpin 8.5s linear infinite;
+}
+
+.m3-table-row-stagger {
+  animation: m3CardStaggerEnter 280ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+/*
+ * Dialogs without an origin element = M3 "fade" (enter/exit) pattern:
+ * enter fades in over 150ms (linear) while scaling 80% -> 100% on the fast spatial spring;
+ * exit fades out over 75ms. Opacity and `scale` are separate animations so each keeps its own
+ * timing, and `scale` never conflicts with the inline transform used by predictive back.
+ * Dialogs opened from an element use the container transform instead (ExpressiveModal, WAAPI).
+ */
+@keyframes m3FadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes m3FadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes m3FadeScaleIn {
+  from {
+    scale: 0.8;
+  }
+  to {
+    scale: none;
+  }
+}
+
+.m3-modal-backdrop {
+  animation: m3FadeIn 150ms linear both;
+}
+
+.m3-modal-backdrop-exit {
+  animation: m3FadeOut 200ms linear both;
+  pointer-events: none;
+}
+
+.m3-modal-dialog-enter {
+  animation:
+    m3FadeIn 150ms linear both,
+    m3FadeScaleIn var(--m3-spring-fast-spatial-duration, 350ms) var(--m3-spring-fast-spatial, cubic-bezier(0.05, 0.7, 0.1, 1)) both;
+}
+
+.m3-modal-dialog-exit {
+  animation: m3FadeOut 75ms linear both;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------------------
+ * Screen transitions (View Transitions API, see theme/viewTransition.ts).
+ * Values from MDC Android: fade-through threshold 35%, incoming scale 92%; shared axis slide
+ * 30dp; shared axis Z incoming 80% / outgoing 110%.
+ * ------------------------------------------------------------------------------------- */
+
+@keyframes vtFadeThroughOut {
+  0% {
+    opacity: 1;
+  }
+  35%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes vtFadeThroughIn {
+  0%,
+  35% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes vtScaleFrom92 {
+  from {
+    scale: 0.92;
+  }
+}
+
+@keyframes vtSlideToStart {
+  to {
+    translate: -30px 0;
+  }
+}
+
+@keyframes vtSlideFromEnd {
+  from {
+    translate: 30px 0;
+  }
+}
+
+@keyframes vtSlideToEnd {
+  to {
+    translate: 30px 0;
+  }
+}
+
+@keyframes vtSlideFromStart {
+  from {
+    translate: -30px 0;
+  }
+}
+
+@keyframes vtScaleTo110 {
+  to {
+    scale: 1.1;
+  }
+}
+
+@keyframes vtScaleFrom80 {
+  from {
+    scale: 0.8;
+  }
+}
+
+@keyframes vtScaleTo80 {
+  to {
+    scale: 0.8;
+  }
+}
+
+@keyframes vtScaleFrom110 {
+  from {
+    scale: 1.1;
+  }
+}
+
+/* Tabs and in-app hierarchy: only the page content animates; top/bottom bars stay pinned on top. */
+html[data-vt='fade-through'] .nsac-page-content,
+html[data-vt^='swipe-'] .nsac-page-content,
+html[data-vt^='axis-x'] .nsac-page-content {
+  view-transition-name: nsac-page;
+}
+
+html[data-vt='fade-through'] .nsac-top-bar,
+html[data-vt^='axis-x'] .nsac-top-bar {
+  view-transition-name: nsac-top-bar;
+}
+
+html[data-vt='fade-through'] .nsac-floating-bottom-pill,
+html[data-vt^='axis-x'] .nsac-floating-bottom-pill {
+  view-transition-name: nsac-bottom-bar;
+}
+
+html[data-vt='fade-through']::view-transition-old(root),
+html[data-vt='fade-through']::view-transition-new(root),
+html[data-vt^='swipe-']::view-transition-old(root),
+html[data-vt^='swipe-']::view-transition-new(root),
+html[data-vt^='axis-x']::view-transition-old(root),
+html[data-vt^='axis-x']::view-transition-new(root),
+html[data-vt]::view-transition-group(nsac-page),
+html[data-vt]::view-transition-group(nsac-top-bar),
+html[data-vt]::view-transition-new(nsac-top-bar),
+html[data-vt]::view-transition-group(nsac-bottom-bar),
+html[data-vt]::view-transition-new(nsac-bottom-bar) {
+  animation: none;
+}
+
+html[data-vt]::view-transition-old(nsac-top-bar),
+html[data-vt]::view-transition-old(nsac-bottom-bar) {
+  display: none;
+}
+
+html[data-vt]::view-transition-group(nsac-page) {
+  z-index: 10;
+}
+
+html[data-vt]::view-transition-old(nsac-page),
+html[data-vt]::view-transition-new(nsac-page) {
+  height: auto;
+  width: 100%;
+  object-fit: none;
+  object-position: top left;
+}
+
+html[data-vt]::view-transition-group(nsac-top-bar) {
+  z-index: 40;
+}
+
+html[data-vt]::view-transition-group(nsac-bottom-bar) {
+  z-index: 50;
+}
+
+@keyframes vtSwipeOutLeft {
+  from {
+    translate: 0 0;
+    opacity: 1;
+  }
+  to {
+    translate: -28% 0;
+    opacity: 0;
+  }
+}
+
+@keyframes vtSwipeInFromRight {
+  from {
+    translate: 28% 0;
+    opacity: 0;
+  }
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+@keyframes vtSwipeOutRight {
+  from {
+    translate: 0 0;
+    opacity: 1;
+  }
+  to {
+    translate: 28% 0;
+    opacity: 0;
+  }
+}
+
+@keyframes vtSwipeInFromLeft {
+  from {
+    translate: -28% 0;
+    opacity: 0;
+  }
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+html[data-vt='swipe-next']::view-transition-old(nsac-page) {
+  animation: vtSwipeOutLeft 260ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+html[data-vt='swipe-next']::view-transition-new(nsac-page) {
+  animation: vtSwipeInFromRight var(--m3-spring-fast-spatial-duration, 340ms)
+    var(--m3-spring-fast-spatial, cubic-bezier(0.05, 0.7, 0.1, 1)) both;
+}
+
+html[data-vt='swipe-prev']::view-transition-old(nsac-page) {
+  animation: vtSwipeOutRight 260ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+html[data-vt='swipe-prev']::view-transition-new(nsac-page) {
+  animation: vtSwipeInFromLeft var(--m3-spring-fast-spatial-duration, 340ms)
+    var(--m3-spring-fast-spatial, cubic-bezier(0.05, 0.7, 0.1, 1)) both;
+}
+
+html[data-vt='fade-through']::view-transition-old(nsac-page) {
+  animation: vtFadeThroughOut 300ms linear both;
+}
+
+html[data-vt='fade-through']::view-transition-new(nsac-page) {
+  animation:
+    vtFadeThroughIn 300ms linear both,
+    vtScaleFrom92 300ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+html[data-vt='axis-x-forward']::view-transition-old(nsac-page) {
+  animation:
+    vtFadeThroughOut 450ms linear both,
+    vtSlideToStart 450ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+html[data-vt='axis-x-forward']::view-transition-new(nsac-page) {
+  animation:
+    vtFadeThroughIn 450ms linear both,
+    vtSlideFromEnd 450ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+html[data-vt='axis-x-backward']::view-transition-old(nsac-page) {
+  animation:
+    vtFadeThroughOut 450ms linear both,
+    vtSlideToEnd 450ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+html[data-vt='axis-x-backward']::view-transition-new(nsac-page) {
+  animation:
+    vtFadeThroughIn 450ms linear both,
+    vtSlideFromStart 450ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+/* Login <-> app: shared axis Z on the whole screen. */
+html[data-vt='axis-z-forward']::view-transition-old(root) {
+  animation:
+    vtFadeThroughOut 450ms linear both,
+    vtScaleTo110 450ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+html[data-vt='axis-z-forward']::view-transition-new(root) {
+  animation:
+    vtFadeThroughIn 450ms linear both,
+    vtScaleFrom80 450ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+html[data-vt='axis-z-backward']::view-transition-old(root) {
+  animation:
+    vtFadeThroughOut 450ms linear both,
+    vtScaleTo80 450ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+html[data-vt='axis-z-backward']::view-transition-new(root) {
+  animation:
+    vtFadeThroughIn 450ms linear both,
+    vtScaleFrom110 450ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m3-page-transition,
+  .m3-modal-dialog-enter,
+  .m3-modal-backdrop {
+    animation-duration: 1ms;
+  }
+}
+
+/* Official NSAC Table Styling (Readable on mobile + desktop) */
+.nsac-official-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+  scrollbar-width: thin;
+}
+
+html[data-design-system='material-you'] .nsac-official-table-wrapper {
+  border-radius: 28px;
+}
+
+.nsac-official-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 820px;
+}
+
+.nsac-official-table th,
+.nsac-official-table td {
+  padding: 12px 10px;
+  vertical-align: middle;
+}
+
+@media (max-width: 919px) {
+  .nsac-official-table {
+    min-width: 540px;
+  }
+
+  .nsac-official-table th,
+  .nsac-official-table td {
+    padding: 8px 5px;
+  }
+
+  .nsac-official-table .sticky-col {
+    min-width: 54px !important;
+    max-width: 64px;
+    font-size: 0.76rem !important;
+  }
+
+  .nsac-official-table.nsac-table-full-names {
+    min-width: 780px;
+  }
+
+  .nsac-official-table.nsac-table-full-names .sticky-col {
+    min-width: 155px !important;
+    max-width: 200px;
+    font-size: 0.84rem !important;
+  }
+}
+
+@media (min-width: 920px) {
+  .nsac-official-table-wrapper {
+    overflow-x: hidden;
+  }
+
+  .nsac-official-table {
+    min-width: 0;
+    table-layout: auto;
+  }
+}
+
+.nsac-official-table .sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+
+.nsac-official-table thead .sticky-col {
+  z-index: 7;
+}
+
+.nsac-table-row-interactive {
+  transition: background-color 150ms ease;
+  cursor: pointer;
+}
+
+.nsac-table-row-interactive:hover td {
+  filter: brightness(1.07);
+}
+
+@keyframes spin360 {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-icon {
+  animation: spin360 900ms linear infinite;
+}
+
+.m3-connected-button-group::-webkit-scrollbar {
+  display: none;
+}
+
+/* ==========================================================================
+   FULL-SCREEN DESIGN SYSTEM TRANSITION ANIMATIONS
+   1. Padrão -> Material You: AOSP Material You Dynamic Color & Shape Morph
+   2. Material You -> Padrão: OpenAI Editorial Geometric Reticle & Bloom
+   ========================================================================== */
+
+@keyframes dsOverlayEnter {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes dsOverlayExit {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+}
+
+.ds-overlay-enter {
+  animation: dsOverlayEnter 220ms cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+
+.ds-overlay-exit {
+  animation: dsOverlayExit 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* AOSP Material You Ripple & Shape Morphing */
+@keyframes aospRippleExpand {
+  0% {
+    transform: translate(-50%, -50%) scale(0.15);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(3.2);
+    opacity: 0;
+  }
+}
+
+.aosp-ripple-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 420px;
+  height: 420px;
+  border-radius: 9999px;
+  border: 2px solid;
+  pointer-events: none;
+}
+
+.aosp-ripple-1 {
+  animation: aospRippleExpand 1350ms cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.aosp-ripple-2 {
+  animation: aospRippleExpand 1350ms cubic-bezier(0.16, 1, 0.3, 1) 260ms infinite;
+}
+
+@keyframes aospShapeRotateSpring {
+  0% {
+    transform: rotate(-45deg) scale(0.65);
+  }
+  45% {
+    transform: rotate(25deg) scale(1.1);
+  }
+  75% {
+    transform: rotate(-8deg) scale(0.97);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.aosp-morph-stage {
+  position: relative;
+  width: 124px;
+  height: 124px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.aosp-morph-svg {
+  animation: aospShapeRotateSpring 1100ms cubic-bezier(0.22, 1.25, 0.36, 1) forwards;
+}
+
+.aosp-center-glyph {
+  position: absolute;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 2rem;
+  letter-spacing: -0.03em;
+}
+
+/* OpenAI Editorial Reticle & Geometric Petal Convergence */
+.openai-grid-reticle {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+}
+
+@keyframes openaiApertureSpin {
+  0% {
+    transform: rotate(-60deg) scale(0.78);
+    opacity: 0;
+  }
+  45% {
+    transform: rotate(12deg) scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.openai-aperture-stage {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.openai-aperture-svg {
+  animation: openaiApertureSpin 1050ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.m3-skeleton {
+  animation: m3SkeletonPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes m3SkeletonPulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m3-skeleton {
+    animation: none;
+  }
+}
+
+/* Content-area offset used by overlay pages so the desktop rail stays visible beside them. */
+:root {
+  --nsac-rail-offset: 0px;
+}
+
+@media (min-width: 920px) {
+  :root {
+    --nsac-rail-offset: 256px;
+  }
+
+  :root.nsac-rail-collapsed {
+    --nsac-rail-offset: 84px;
+  }
+}
+
+/* Full-screen page pushed above the current screen (predictive back reveals the screen below). */
+.nsac-overlay-page {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: var(--nsac-rail-offset);
+  z-index: 35;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  transition: left 320ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.nsac-overlay-page-content {
+  width: 100%;
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: calc(var(--nsac-top-bar-height, max(60px, env(safe-area-inset-top, 0px) + 57px)) + 16px) 12px
+    calc(env(safe-area-inset-bottom, 0px) + 104px);
+}
+
+@media (min-width: 920px) {
+  .nsac-overlay-page-content {
+    padding: 22px 24px 48px;
+  }
+}
+
+
+/* Ranking: slowly turning M3 shape behind the 1st place photo. */
+.n2sac-crown-halo {
+  animation: n2sacCrownHalo 14s linear infinite;
+}
+@keyframes n2sacCrownHalo {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* Hidden under an open dialog: no reason to keep repainting it. */
+html.n2sac-scroll-locked .n2sac-crown-halo {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .n2sac-crown-halo {
+    animation: none;
+  }
+}
+
+/* Dialogs: a scroll that reaches the end of a dialog never chains to the page behind it.
+   Applied only to the dialog root (not every descendant `*`, because `overscroll-behavior: contain`
+   on `<input>`, `<textarea>`, or `overflow: hidden` containers blocks touch-scroll chaining to
+   the dialog's own scroller on Android WebView). */
+[role='dialog'] {
+  overscroll-behavior: contain;
+}
+
+/* ShimmerVeil: Circle to Search–style loading haze (transform/opacity only → compositor). */
+.n2sac-veil {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+  background: rgba(255, 236, 240, 0.32);
+  z-index: 1;
+}
+.n2sac-veil__haze {
+  position: absolute;
+  inset: -60%;
+  background:
+    radial-gradient(38% 42% at 28% 34%, rgba(234, 67, 53, 0.55), transparent 70%),
+    radial-gradient(34% 40% at 70% 30%, rgba(251, 188, 4, 0.45), transparent 72%),
+    radial-gradient(40% 44% at 62% 72%, rgba(244, 114, 182, 0.5), transparent 70%),
+    radial-gradient(30% 36% at 30% 76%, rgba(66, 133, 244, 0.38), transparent 72%),
+    radial-gradient(26% 30% at 84% 62%, rgba(52, 168, 83, 0.3), transparent 72%);
+  animation: n2sacVeilDrift 5.2s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+  will-change: transform;
+}
+.n2sac-veil__sweep {
+  position: absolute;
+  inset: -20% -60%;
+  background: linear-gradient(100deg, transparent 38%, rgba(255, 255, 255, 0.42) 50%, transparent 62%);
+  animation: n2sacVeilSweep 1.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+.n2sac-veil__grain {
+  position: absolute;
+  inset: -64px;
+  background-size: 128px 128px;
+  opacity: 0.9;
+  mix-blend-mode: overlay;
+  animation: n2sacVeilGrain 0.5s steps(4) infinite;
+  will-change: transform;
+}
+.n2sac-veil--compact {
+  background: rgba(255, 236, 240, 0.14);
+}
+.n2sac-veil--compact .n2sac-veil__haze {
+  opacity: 0.55;
+}
+/* Full-dialog surface variant: smaller GPU overhang (~50% less VRAM) and no overlay blend readback. */
+.n2sac-veil--surface {
+  contain: strict;
+  background: rgba(255, 236, 240, 0.24);
+}
+.n2sac-veil--surface .n2sac-veil__haze {
+  inset: -26%;
+  animation-name: n2sacVeilSurfaceDrift;
+}
+.n2sac-veil--surface .n2sac-veil__sweep {
+  inset: 0 -38%;
+  animation-name: n2sacVeilSurfaceSweep;
+}
+.n2sac-veil--surface .n2sac-veil__grain {
+  inset: -32px;
+  opacity: 0.55;
+  mix-blend-mode: normal;
+}
+.n2sac-veil--static * {
+  animation: none !important;
+}
+@keyframes n2sacVeilDrift {
+  0% {
+    transform: translate3d(-7%, -5%, 0) rotate(-6deg) scale(1);
+  }
+  100% {
+    transform: translate3d(7%, 6%, 0) rotate(14deg) scale(1.08);
+  }
+}
+@keyframes n2sacVeilSurfaceDrift {
+  0% {
+    transform: translate3d(-5%, -4%, 0) rotate(-4deg) scale(1);
+  }
+  100% {
+    transform: translate3d(5%, 4%, 0) rotate(10deg) scale(1.06);
+  }
+}
+@keyframes n2sacVeilSweep {
+  0% {
+    transform: translate3d(-45%, 0, 0);
+  }
+  100% {
+    transform: translate3d(45%, 0, 0);
+  }
+}
+@keyframes n2sacVeilSurfaceSweep {
+  0% {
+    transform: translate3d(-32%, 0, 0);
+  }
+  100% {
+    transform: translate3d(32%, 0, 0);
+  }
+}
+@keyframes n2sacVeilGrain {
+  0% { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(-23px, 17px, 0); }
+  50% { transform: translate3d(31px, -9px, 0); }
+  75% { transform: translate3d(-11px, -29px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+.n2sac-snackbar {
+  transform: translateX(-50%);
+  animation: n2sacSnackIn 360ms cubic-bezier(0.05, 0.7, 0.1, 1) both, n2sacSnackOut 240ms 2.3s cubic-bezier(0.3, 0, 0.8, 0.15) forwards;
+}
+@keyframes n2sacSnackIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 18px) scale(0.96);
+  }
+}
+@keyframes n2sacSnackOut {
+  to {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+}
+
+/* Google / M3 Expressive friendship celebration animations (compositor-only transform + opacity). */
+@keyframes n2sacFriendRipple {
+  0% {
+    transform: translate(-50%, -50%) scale(0.25);
+    opacity: 0.72;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.4);
+    opacity: 0;
+  }
+}
+@keyframes n2sacFriendSlideLeft {
+  0% {
+    opacity: 0;
+    transform: translate3d(-44px, 0, 0) scale(0.72) rotate(-10deg);
+  }
+  65% {
+    opacity: 1;
+    transform: translate3d(5px, 0, 0) scale(1.05) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+@keyframes n2sacFriendSlideRight {
+  0% {
+    opacity: 0;
+    transform: translate3d(44px, 0, 0) scale(0.72) rotate(10deg);
+  }
+  65% {
+    opacity: 1;
+    transform: translate3d(-5px, 0, 0) scale(1.05) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+  }
+}
+@keyframes n2sacFriendBadgePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(-24deg);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.18) rotate(8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+@keyframes n2sacFriendConfetti {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(0.3) rotate(0deg);
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--tx), var(--ty), 0) scale(1) rotate(var(--rot));
+  }
+}
+.n2sac-friend-ripple {
+  animation: n2sacFriendRipple 1400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.n2sac-friend-avatar-l {
+  animation: n2sacFriendSlideLeft 640ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.n2sac-friend-avatar-r {
+  animation: n2sacFriendSlideRight 640ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.n2sac-friend-badge {
+  animation: n2sacFriendBadgePop 560ms 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.n2sac-friend-confetti {
+  animation: n2sacFriendConfetti 1100ms 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .n2sac-friend-ripple,
+  .n2sac-friend-avatar-l,
+  .n2sac-friend-avatar-r,
+  .n2sac-friend-badge,
+  .n2sac-friend-confetti {
+    animation: none !important;
+  }
+}
+
+/* ------------------------------------------------------------------ Keyboard (IME) */
+/* The window no longer pans when the keyboard opens: pages leave room for it themselves. */
+html.nsac-ime-open .nsac-page-content,
+html.nsac-ime-open .nsac-overlay-page-content {
+  padding-bottom: calc(var(--nsac-ime-height, 0px) + 24px);
+}
+
+/* ------------------------------------------------------------------ Full-screen chat */
+.nsac-chat-root {
+  position: fixed;
+  left: 0;
+  right: 0;
+  /* Follows the visual viewport (see platform/keyboardInsets.ts), so the header stays on screen
+     however the engine handles the keyboard. */
+  top: var(--nsac-vv-top, 0px);
+  height: var(--nsac-vv-height, 100%);
+  z-index: 10090;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Keyboard still covering the visible area: the footer sits on top of it. */
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--nsac-ime-inset, 0px));
+  box-sizing: border-box;
+  overscroll-behavior: contain;
+}
+
+.nsac-chat-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 8px 6px 4px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 3;
+}
+
+.nsac-chat-bar-swap {
+  animation: nsacChatBarSwap var(--m3-spring-default-effects-duration, 300ms) var(--m3-spring-default-effects, ease-out);
+}
+
+@keyframes nsacChatBarSwap {
+  from { opacity: 0; translate: 0 -8px; }
+}
+
+.nsac-chat-peer {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px 4px 4px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms;
+}
+.nsac-chat-peer:active { background-color: color-mix(in srgb, currentColor 8%, transparent); }
+
+.nsac-chat-subtitle {
+  display: inline-flex;
+  align-items: baseline;
+  animation: nsacChatBarSwap 220ms ease-out;
+}
+
+.nsac-chat-ellipsis::after {
+  content: '…';
+  display: inline-block;
+  animation: nsacChatEllipsis 1.2s steps(4, end) infinite;
+  overflow: hidden;
+  vertical-align: bottom;
+  width: 0;
+}
+@keyframes nsacChatEllipsis { to { width: 1.1em; } }
+
+.nsac-chat-icon-btn {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 150ms, scale 200ms var(--m3-spring-fast-spatial, ease);
+}
+.nsac-chat-icon-btn:hover { background-color: color-mix(in srgb, currentColor 8%, transparent); }
+.nsac-chat-icon-btn:active { scale: 0.9; background-color: color-mix(in srgb, currentColor 12%, transparent); }
+.nsac-chat-icon-btn:disabled { opacity: 0.38; cursor: default; }
+
+.nsac-chat-icon-swap { animation: nsacChatIconSwap var(--m3-spring-fast-spatial-duration, 300ms) var(--m3-spring-fast-spatial, ease-out); }
+@keyframes nsacChatIconSwap { from { scale: 0.4; rotate: -90deg; opacity: 0; } }
+
+.nsac-chat-dropdown,
+.nsac-chat-notice {
+  animation: nsacChatPopIn var(--m3-spring-fast-spatial-duration, 300ms) var(--m3-spring-fast-spatial, ease-out);
+  transform-origin: top right;
+}
+
+.nsac-chat-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.nsac-chat-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+}
+
+.nsac-chat-column {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+.nsac-chat-scroll > .nsac-chat-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px 10px;
+}
+
+.nsac-chat-day {
+  position: sticky;
+  top: 6px;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  margin: 14px 0 4px;
+  pointer-events: none;
+}
+.nsac-chat-day > span {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.nsac-chat-bubble {
+  transition: scale 220ms var(--m3-spring-fast-spatial, ease), background-color 200ms;
+}
+.nsac-chat-bubble:active { scale: 0.98; }
+.nsac-chat-bubble.is-fresh {
+  animation: nsacChatBubbleIn var(--m3-spring-default-spatial-duration, 450ms) var(--m3-spring-default-spatial, ease-out) both;
+}
+@keyframes nsacChatBubbleIn {
+  from { opacity: 0; scale: 0.6; translate: 0 18px; }
+  40% { opacity: 1; }
+}
+.nsac-chat-bubble.is-flash { animation: nsacChatFlash 1.3s var(--m3-spring-slow-effects, ease-out); }
+@keyframes nsacChatFlash {
+  0%, 100% { filter: none; scale: 1; }
+  15% { filter: brightness(1.35) saturate(1.2); scale: 1.04; }
+  45% { filter: brightness(1.15); scale: 1; }
+}
+.nsac-chat-bubble.is-failed { opacity: 0.7; }
+.nsac-chat-bubble.is-emoji .nsac-chat-emoji-text { display: inline-block; }
+.nsac-chat-bubble.is-emoji.is-fresh .nsac-chat-emoji-text { animation: nsacChatEmojiIn 700ms var(--m3-spring-fast-spatial, ease-out); }
+@keyframes nsacChatEmojiIn {
+  0% { scale: 0.2; rotate: -25deg; }
+  60% { scale: 1.25; rotate: 8deg; }
+  100% { scale: 1; rotate: 0deg; }
+}
+
+.nsac-chat-quote { transition: filter 150ms; }
+.nsac-chat-quote:active { filter: brightness(0.92); }
+
+.nsac-chat-heart-burst {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-size: 2.6rem;
+  pointer-events: none;
+  translate: -50% -50%;
+  animation: nsacChatHeartBurst 900ms var(--m3-spring-fast-spatial, ease-out) forwards;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25));
+}
+@keyframes nsacChatHeartBurst {
+  0% { scale: 0; opacity: 0; }
+  30% { scale: 1.3; opacity: 1; }
+  60% { scale: 1; opacity: 1; translate: -50% -60%; }
+  100% { scale: 1.1; opacity: 0; translate: -50% -140%; }
+}
+
+.nsac-chat-reaction {
+  animation: nsacChatPopIn var(--m3-spring-fast-spatial-duration, 300ms) var(--m3-spring-fast-spatial, ease-out);
+  transition: scale 160ms;
+}
+.nsac-chat-reaction:active { scale: 0.88; }
+@keyframes nsacChatPopIn { from { scale: 0.3; opacity: 0; } }
+
+.nsac-chat-reaction-pick {
+  animation: nsacChatPickIn var(--m3-spring-fast-spatial-duration, 300ms) var(--m3-spring-fast-spatial, ease-out) both;
+  transition: scale 200ms var(--m3-spring-fast-spatial, ease);
+}
+.nsac-chat-reaction-pick:hover { scale: 1.25; }
+.nsac-chat-reaction-pick:active { scale: 1.45; }
+@keyframes nsacChatPickIn { from { scale: 0; translate: 0 12px; opacity: 0; } }
+
+.nsac-chat-menu-item { transition: background-color 120ms; }
+.nsac-chat-menu-item:hover,
+.nsac-chat-menu-item:active { background-color: color-mix(in srgb, currentColor 8%, transparent) !important; }
+
+.nsac-chat-hover-actions { opacity: 0; transition: opacity 150ms; }
+.nsac-chat-hover-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.nsac-chat-hover-btn:hover { background-color: color-mix(in srgb, currentColor 10%, transparent); }
+@media (hover: hover) and (pointer: fine) {
+  .nsac-chat-row:hover .nsac-chat-hover-actions { opacity: 1; }
+}
+@media not ((hover: hover) and (pointer: fine)) {
+  .nsac-chat-hover-actions { display: none !important; }
+}
+
+.nsac-chat-seen { animation: nsacChatBarSwap 260ms ease-out; }
+.nsac-chat-spin-slow { animation: nsacChatSpin 1.6s linear infinite; }
+@keyframes nsacChatSpin { to { rotate: 360deg; } }
+
+.nsac-chat-typing {
+  align-self: flex-start;
+  display: inline-flex;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 14px 16px;
+  border-radius: 22px 22px 22px 6px;
+  transform-origin: bottom left;
+  animation: nsacChatBubbleIn var(--m3-spring-default-spatial-duration, 450ms) var(--m3-spring-default-spatial, ease-out) both;
+}
+.nsac-chat-typing > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0.5;
+  animation: nsacChatTypingDot 1.2s ease-in-out infinite;
+}
+.nsac-chat-typing > span:nth-child(2) { animation-delay: 0.15s; }
+.nsac-chat-typing > span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes nsacChatTypingDot {
+  0%, 60%, 100% { translate: 0 0; opacity: 0.4; }
+  30% { translate: 0 -6px; opacity: 1; }
+}
+
+.nsac-chat-jump {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  z-index: 4;
+  width: 46px;
+  height: 46px;
+  border: none;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  scale: 0.4;
+  pointer-events: none;
+  transition:
+    opacity 150ms linear,
+    scale var(--m3-spring-fast-spatial-duration, 300ms) var(--m3-spring-fast-spatial, ease);
+}
+.nsac-chat-jump.is-visible { opacity: 1; scale: 1; pointer-events: auto; }
+.nsac-chat-jump-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: nsacChatPopIn var(--m3-spring-fast-spatial-duration, 300ms) var(--m3-spring-fast-spatial, ease-out);
+}
+
+.nsac-chat-notice {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  translate: -50% 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(92%, 520px);
+  box-sizing: border-box;
+  padding: 10px 12px 10px 16px;
+  border-radius: 16px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  transform-origin: bottom center;
+}
+
+.nsac-chat-chip {
+  border: none;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nsac-chat-empty { animation: nsacChatBarSwap 400ms ease-out; }
+.nsac-chat-starter {
+  animation: nsacChatPickIn var(--m3-spring-default-spatial-duration, 450ms) var(--m3-spring-default-spatial, ease-out) both;
+  transition: scale 200ms var(--m3-spring-fast-spatial, ease), background-color 150ms;
+}
+.nsac-chat-starter:active { scale: 0.94; }
+
+.nsac-chat-footer {
+  flex-shrink: 0;
+  padding: 8px 10px 10px;
+  position: relative;
+  z-index: 3;
+}
+
+.nsac-chat-send {
+  transition:
+    background-color 200ms,
+    color 200ms,
+    border-radius var(--m3-spring-fast-spatial-duration, 300ms) var(--m3-spring-fast-spatial, ease),
+    scale var(--m3-spring-fast-spatial-duration, 300ms) var(--m3-spring-fast-spatial, ease);
+  scale: 0.92;
+}
+.nsac-chat-send.is-ready { scale: 1; }
+.nsac-chat-send.is-ready:active { scale: 0.88; }
+
+.nsac-chat-emoji-key {
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  font-size: 1.45rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: scale 180ms var(--m3-spring-fast-spatial, ease), background-color 120ms;
+}
+.nsac-chat-emoji-key:hover { background-color: color-mix(in srgb, currentColor 8%, transparent); }
+.nsac-chat-emoji-key:active { scale: 1.35; }
+
+.nsac-chat-text-btn {
+  border: none;
+  background: transparent;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nsac-chat-root *,
+  .nsac-chat-root *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------ Pushed page (Configurações) */
+/* Same surface model as the chat: above the top bar and bottom pill on mobile; on desktop it
+   covers the content area only, so the rail stays usable. */
+.nsac-pushed-page {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: var(--nsac-rail-offset, 0px);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: left 300ms var(--m3-spring-default-spatial, ease);
+}
+.nsac-pushed-page-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 64px;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 16px 6px 6px;
+  box-sizing: border-box;
+}
+.nsac-pushed-page-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+.nsac-pushed-page-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 32px + var(--nsac-ime-height, 0px));
+  box-sizing: border-box;
+}
+
+/* ------------------------------------------------------------------ Chat: GIF explorer */
+.nsac-chat-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 200ms, color 200ms, scale 200ms var(--m3-spring-fast-spatial, ease);
+}
+.nsac-chat-tab:active { scale: 0.95; }
+.nsac-chat-panel-body { animation: nsacChatBarSwap 260ms ease-out; }
+.nsac-gif-chip-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  min-height: 32px;
+}
+.nsac-gif-chip-row::-webkit-scrollbar { display: none; }
+.nsac-gif-chip { white-space: nowrap; animation: nsacChatPopIn var(--m3-spring-fast-spatial-duration, 300ms) var(--m3-spring-fast-spatial, ease-out); }
+.nsac-gif-tile {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  /* Pan gestures must reach the grid's scroller from anywhere on a tile. */
+  touch-action: pan-y;
+  contain: layout paint;
+  -webkit-tap-highlight-color: transparent;
+  animation: nsacChatPickIn var(--m3-spring-default-spatial-duration, 450ms) var(--m3-spring-default-spatial, ease-out) both;
+}
+@media (hover: hover) { .nsac-gif-tile:hover { filter: brightness(1.08); } }
+.nsac-chat-gif-btn { animation: nsacChatIconSwap var(--m3-spring-fast-spatial-duration, 300ms) var(--m3-spring-fast-spatial, ease-out); }
+
+
+/* ShimmerVeil `tile`: single-canvas Circle to Search look — frosted wash, 9 Monet/theme clouds
+   (32×40 buffer upscaled), pre-baked soft inner rainbow halo, and crisp evenodd-clipped rainbow
+   border rim in ONE canvas (zero CSS mask-composite, zero per-frame style recalcs). */
+.n2sac-veil--tile {
+  overflow: clip;
+  contain: strict;
+}
+.n2sac-veil__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.n2sac-veil--tile .n2sac-veil__grain {
+  inset: 0;
+  opacity: 0.28;
+  mix-blend-mode: normal;
+  animation: none;
+  will-change: auto;
+}
