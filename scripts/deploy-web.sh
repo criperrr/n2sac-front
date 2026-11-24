@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Image-only web OTA deploy for n²sac (zero source rsync to remote server).
+# Stamps public/version.json, builds dist/ and n2sac-web:latest locally,
+# streams the image via SSH, and restarts only the web container (--no-build).
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -6,6 +9,21 @@ REMOTE_USER="${N2SAC_USER:-criper}"
 REMOTE_HOST="${N2SAC_HOST:-100.69.91.121}"
 REMOTE_DIR="${N2SAC_REMOTE_DIR:-/opt/n2sac}"
 VERSION_JSON="${ROOT_DIR}/public/version.json"
+DRY_RUN="false"
+
+if [ "${1:-}" = "--dry-run" ]; then
+  DRY_RUN="true"
+fi
+
+if [ "${DRY_RUN}" = "true" ]; then
+  echo "[deploy-web] DRY-RUN: verifying Dockerfile, package.json, and remote compose (${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR})..."
+  test -f "${ROOT_DIR}/Dockerfile"
+  test -f "${ROOT_DIR}/package.json"
+  ssh -T -o BatchMode=yes -o LogLevel=ERROR "${REMOTE_USER}@${REMOTE_HOST}" \
+    "cd '${REMOTE_DIR}' && docker compose --dry-run up -d --no-deps --no-build web"
+  echo "[deploy-web] DRY-RUN OK (zero source rsync, image-only deploy)."
+  exit 0
+fi
 
 APP_VERSION="${N2SAC_VERSION:-$(node -p "require('${ROOT_DIR}/package.json').version")}"
 BUILD_ID="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -69,22 +87,8 @@ fi
 echo "[deploy-web] Building n2sac-web:latest locally (fast BuildKit)..."
 docker build -f "${ROOT_DIR}/Dockerfile" -t n2sac-web:latest "${ROOT_DIR}"
 
-echo "[deploy-web] Streaming pre-built n2sac-web:latest to ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}..."
-rsync -az \
-  --exclude 'node_modules/' \
-  --exclude 'android/' \
-  --exclude 'android-aosp-bridge/' \
-  --exclude '.git/' \
-  --exclude '.github/' \
-  --exclude '.agents/' \
-  --exclude 'secrets/' \
-  --exclude 'docker-compose.test.yml' \
-  --exclude 'deploy/nginx.test.conf' \
-  --exclude '.env' \
-  --exclude '.env.*' \
-  "${ROOT_DIR}/" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/"
-
-docker save n2sac-web:latest | gzip | ssh "${REMOTE_USER}@${REMOTE_HOST}" "
+echo "[deploy-web] Streaming pre-built n2sac-web:latest to ${REMOTE_USER}@${REMOTE_HOST} (no source rsync)..."
+docker save n2sac-web:latest | gzip | ssh -T -o LogLevel=ERROR "${REMOTE_USER}@${REMOTE_HOST}" "
   set -euo pipefail
   gunzip | docker load
   rm -rf /tmp/n2sac-downloads-backup /tmp/n2sac-prev-assets
@@ -101,4 +105,7 @@ docker save n2sac-web:latest | gzip | ssh "${REMOTE_USER}@${REMOTE_HOST}" "
     rm -rf /tmp/n2sac-downloads-backup
   fi
 "
+
+echo "[deploy-web] Verifying /version.json..."
+curl -fsS "http://${REMOTE_HOST}:8080/version.json" && echo ""
 echo "[deploy-web] Done! Web live at http://${REMOTE_HOST}:8080"
