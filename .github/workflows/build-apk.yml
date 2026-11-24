@@ -190,7 +190,7 @@ jobs:
 
       - name: Publish signed APK + SHA-256 to public GitHub Releases (criperrr/n2sac)
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.PUBLIC_RELEASES_TOKEN || github.token }}
         run: |
           set -euo pipefail
           TAG="${{ steps.meta.outputs.tag }}"

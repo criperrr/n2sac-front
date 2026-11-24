@@ -6,5 +6,5 @@
   "apkVersion": "1.6.0",
   "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.0/n2sac-1.6.0.apk",
   "apkSha256": "",
-  "notes": "Nova identidade visual adaptativa Monet (logo n²sac com giro GPU 120fps, splash dinâmica com explosão e frenagem, ícones do launcher por tema), página pública /inicio e /privacidade, conexões de perfil, exportação de boletim PDF e melhorias de desempenho."
+  "notes": "Nova logo adaptativa ao tema, animação de abertura renovada, ícones que mudam com a cor escolhida, conexões no perfil, boletim em PDF e app mais leve."
 }
