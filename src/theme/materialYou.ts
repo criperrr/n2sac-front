@@ -545,3 +545,34 @@ export function generateM3ColorTokens(
     onMixedContainer: tone(p, 16),
   };
 }
+
+/**
+ * Harmonizes a semantic role/tag base hex color toward the active Material You (Monet)
+ * seed/primary color using HCT tonal blending, returning accessible container/text/border colors.
+ */
+export function harmonizeRoleBadgeColors(
+  baseHex: string,
+  seedHex: string,
+  isDark: boolean,
+  harmonizeWithMonet: boolean
+): { bg: string; fg: string; border: string } {
+  const safeBase = /^#[0-9a-fA-F]{6}$/.test(baseHex) ? baseHex : '#6366F1';
+  const safeSeed = /^#[0-9a-fA-F]{6}$/.test(seedHex) ? seedHex : '#6750A4';
+  const baseArgb = argbFromHex(safeBase);
+  const seedArgb = argbFromHex(safeSeed);
+  const hct = Hct.fromInt(harmonizeWithMonet ? Blend.harmonize(baseArgb, seedArgb) : baseArgb);
+  const chroma = Math.max(32, Math.min(64, hct.chroma));
+
+  if (isDark) {
+    return {
+      bg: hexFromArgb(Hct.from(hct.hue, chroma, 24).toInt()),
+      fg: hexFromArgb(Hct.from(hct.hue, Math.max(36, chroma), 90).toInt()),
+      border: hexFromArgb(Hct.from(hct.hue, chroma, 42).toInt()),
+    };
+  }
+  return {
+    bg: hexFromArgb(Hct.from(hct.hue, chroma, 91).toInt()),
+    fg: hexFromArgb(Hct.from(hct.hue, Math.max(40, chroma), 22).toInt()),
+    border: hexFromArgb(Hct.from(hct.hue, chroma, 76).toInt()),
+  };
+}

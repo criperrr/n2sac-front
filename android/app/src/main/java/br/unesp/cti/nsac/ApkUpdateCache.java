@@ -1,4 +1,4 @@
-package br.unesp.cti.nsac.aperture;
+package br.unesp.cti.nsac;
 
 import android.content.Context;
 import android.util.Log;

@@ -32,6 +32,7 @@ import type {
   RankingPreferences,
 } from '../api/types';
 import { useM3Theme } from '../theme/ThemeContext';
+import { harmonizeRoleBadgeColors } from '../theme/materialYou';
 import {
   AnimatedNumber,
   EnhancedConnectedButtonGroup,
@@ -90,7 +91,7 @@ export const RankingScreen: React.FC<{
   refreshSignal = 0,
   onRefreshingChange,
 }) => {
-  const { tokens, isMaterialYou } = useM3Theme();
+  const { tokens, isMaterialYou, effectiveSeedHex, effectiveIsDark } = useM3Theme();
   const [scope, setScope] = useState<'class' | 'course' | 'school'>('class');
   const [bimester, setBimester] = useState<number>(0); // 0 = all
   const [subjectSearch, setSubjectSearch] = useState('');
@@ -745,6 +746,33 @@ export const RankingScreen: React.FC<{
                       >
                         {entry.class_code}
                       </span>
+                      {entry.tags &&
+                        entry.tags.slice(0, 2).map((tag) => {
+                          const badgeColors = harmonizeRoleBadgeColors(
+                            tag.color_hex,
+                            effectiveSeedHex,
+                            effectiveIsDark,
+                            isMaterialYou
+                          );
+                          return (
+                            <span
+                              key={tag.slug}
+                              title={tag.description}
+                              style={{
+                                padding: '2px 8px',
+                                borderRadius: isMaterialYou ? 999 : 6,
+                                fontSize: '0.68rem',
+                                fontWeight: 700,
+                                letterSpacing: '0.01em',
+                                backgroundColor: badgeColors.bg,
+                                color: badgeColors.fg,
+                                border: `1px solid ${badgeColors.border}`,
+                              }}
+                            >
+                              {tag.label}
+                            </span>
+                          );
+                        })}
                       {entry.is_me && (
                         <span
                           style={{

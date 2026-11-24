@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- System fallback (pre-Android 12 grayscale contrasts; overridden by Monet on API 31+) -->
+    <color name="n2sac_logo_bg">#111214</color>
+    <color name="n2sac_logo_seal">#E0E0E0</color>
+    <color name="n2sac_logo_orbital_1">#9E9E9E</color>
+    <color name="n2sac_logo_orbital_2">#616161</color>
+    <color name="n2sac_logo_text">#FFFFFF</color>
+    <!-- App Theme: editorial (dark) -->
+    <color name="n2sac_editorial_bg">#111214</color>
+    <color name="n2sac_editorial_seal">#E0E0E0</color>
+    <color name="n2sac_editorial_orb1">#9E9E9E</color>
+    <color name="n2sac_editorial_orb2">#616161</color>
+    <color name="n2sac_editorial_text">#FFFFFF</color>
+    <!-- App Theme: blue (dark) -->
+    <color name="n2sac_blue_bg">#111318</color>
+    <color name="n2sac_blue_seal">#ADC6FF</color>
+    <color name="n2sac_blue_orb1">#DEBCDF</color>
+    <color name="n2sac_blue_orb2">#BFC6DC</color>
+    <color name="n2sac_blue_text">#E2E2E9</color>
+    <!-- App Theme: green (dark) -->
+    <color name="n2sac_green_bg">#0F1511</color>
+    <color name="n2sac_green_seal">#8ED5B0</color>
+    <color name="n2sac_green_orb1">#A5CDDE</color>
+    <color name="n2sac_green_orb2">#B4CCBD</color>
+    <color name="n2sac_green_text">#DEE4DE</color>
+    <!-- App Theme: purple (dark) -->
+    <color name="n2sac_purple_bg">#141318</color>
+    <color name="n2sac_purple_seal">#CDBDFF</color>
+    <color name="n2sac_purple_orb1">#EEB8CA</color>
+    <color name="n2sac_purple_orb2">#CBC3DC</color>
+    <color name="n2sac_purple_text">#E6E1E9</color>
+    <!-- App Theme: teal (dark) -->
+    <color name="n2sac_teal_bg">#0F1416</color>
+    <color name="n2sac_teal_seal">#84D2E7</color>
+    <color name="n2sac_teal_orb1">#BFC4EB</color>
+    <color name="n2sac_teal_orb2">#B2CBD2</color>
+    <color name="n2sac_teal_text">#DEE3E5</color>
+    <!-- App Theme: amber (dark) -->
+    <color name="n2sac_amber_bg">#18120C</color>
+    <color name="n2sac_amber_seal">#F8BB71</color>
+    <color name="n2sac_amber_orb1">#BBCD9E</color>
+    <color name="n2sac_amber_orb2">#DFC2A2</color>
+    <color name="n2sac_amber_text">#EEE0D4</color>
+    <!-- App Theme: coral (dark) -->
+    <color name="n2sac_coral_bg">#1A1111</color>
+    <color name="n2sac_coral_seal">#FFB3AD</color>
+    <color name="n2sac_coral_orb1">#E1C28C</color>
+    <color name="n2sac_coral_orb2">#E7BDB9</color>
+    <color name="n2sac_coral_text">#F1DEDD</color>
+    <!-- App Theme: rose (dark) -->
+    <color name="n2sac_rose_bg">#191114</color>
+    <color name="n2sac_rose_seal">#FFB0CD</color>
+    <color name="n2sac_rose_orb1">#F1BC96</color>
+    <color name="n2sac_rose_orb2">#E1BDC9</color>
+    <color name="n2sac_rose_text">#EEDFE2</color>
+</resources>

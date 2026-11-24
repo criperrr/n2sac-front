@@ -40,6 +40,7 @@ import {
   type FriendshipCelebrationTarget,
 } from '../social/FriendshipCelebration';
 import { ProfileAvatar, useProfileImage } from './ProfileAvatar';
+import { ProfileConnectionsStrip } from './ProfileConnectionsStrip';
 import { ReportSheet } from './ReportSheet';
 
 /** What the opener already knows, shown instantly while the full profile loads. */
@@ -707,6 +708,10 @@ const ProfileSheet: React.FC<{
           <p style={{ margin: '10px 0 0', fontSize: '0.9rem', lineHeight: 1.5, color: profile?.bio ? tokens.onSurface : tokens.onSurfaceVariant }}>
             {profile?.bio ?? 'Sem bio ainda.'}
           </p>
+        )}
+
+        {state === 'ready' && profile?.connections && profile.connections.length > 0 && (
+          <ProfileConnectionsStrip connections={profile.connections} />
         )}
 
         {state === 'error' && (

@@ -1,4 +1,4 @@
-package br.unesp.cti.nsac.aperture;
+package br.unesp.cti.nsac;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -238,7 +238,7 @@ public final class GradeNotificationAccumulator {
 
         // Build full tap Intent with all accumulated highlights so clicking opens the Summary-First modal.
         Intent tapIntent = new Intent(appCtx, MainActivity.class);
-        tapIntent.setAction("br.unesp.cti.nsac.aperture.OPEN_ACCUMULATED_GRADES");
+        tapIntent.setAction("br.unesp.cti.nsac.OPEN_ACCUMULATED_GRADES");
         tapIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         tapIntent.putExtra("kind", "grade_update");
         tapIntent.putExtra("title", title);

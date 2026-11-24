@@ -30,6 +30,7 @@ import type {
   ClassroomChatMessage,
 } from '../../api/types';
 import { useM3Theme } from '../../theme/ThemeContext';
+import { harmonizeRoleBadgeColors } from '../../theme/materialYou';
 import { prefersReducedMotion } from '../../theme/motion';
 import { animateElementSizeMorph, type MorphSize } from '../../theme/contentSizeMorph';
 import { useBackLayer } from '../../navigation/backStack';
@@ -102,7 +103,7 @@ const ClassroomMessageRow: React.FC<ClassroomMessageRowProps> = memo(function Cl
   onOpenLightbox,
   onOpenGif,
 }) {
-  const { tokens, isMaterialYou } = useM3Theme();
+  const { tokens, isMaterialYou, effectiveSeedHex, effectiveIsDark } = useM3Theme();
   const bubbleRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const prevSizeRef = useRef<MorphSize | null>(null);
@@ -291,6 +292,35 @@ const ClassroomMessageRow: React.FC<ClassroomMessageRowProps> = memo(function Cl
               >
                 {m.sender_label}
               </span>
+              {m.sender_tags &&
+                m.sender_tags.slice(0, 2).map((tag) => {
+                  const badgeColors = harmonizeRoleBadgeColors(
+                    tag.color_hex,
+                    effectiveSeedHex,
+                    effectiveIsDark,
+                    isMaterialYou
+                  );
+                  return (
+                    <span
+                      key={tag.slug}
+                      title={tag.description}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '1px 6px',
+                        borderRadius: isMaterialYou ? 999 : 5,
+                        fontSize: '0.62rem',
+                        fontWeight: 800,
+                        letterSpacing: '0.01em',
+                        backgroundColor: badgeColors.bg,
+                        color: badgeColors.fg,
+                        border: `1px solid ${badgeColors.border}`,
+                      }}
+                    >
+                      {tag.label}
+                    </span>
+                  );
+                })}
               {m.sender_is_representative && (
                 <span
                   style={{

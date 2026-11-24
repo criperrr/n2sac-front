@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#111214" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f6f6f7" media="(prefers-color-scheme: light)" />
+    <meta
+      name="description"
+      content="Política de Privacidade do aplicativo n²sac — cliente acadêmico para estudantes do CTI UNESP Bauru."
+    />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Outfit:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <title>Política de Privacidade • n²sac</title>
+    <style>
+      :root {
+        --bg: #111214;
+        --surface: #181a1f;
+        --surface-high: #20232a;
+        --border: #2c303a;
+        --text: #eef0f4;
+        --muted: #a1a7b3;
+        --accent: #adc6ff;
+        --accent-bg: rgba(173, 198, 255, 0.12);
+        --accent-border: rgba(173, 198, 255, 0.28);
+        --pill-bg: #232730;
+        --radius-lg: 28px;
+        --radius-md: 18px;
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f6f6f7;
+          --surface: #ffffff;
+          --surface-high: #f0f2f6;
+          --border: #e1e4eb;
+          --text: #15171c;
+          --muted: #565d6d;
+          --accent: #385898;
+          --accent-bg: rgba(56, 88, 152, 0.08);
+          --accent-border: rgba(56, 88, 152, 0.22);
+          --pill-bg: #ebedf3;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .container {
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 28px 18px 64px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .hero {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px 26px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .brand img {
+        width: 72px;
+        height: 72px;
+        display: block;
+        flex-shrink: 0;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.7rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
+      }
+
+      .brand p {
+        margin: 4px 0 0;
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+
+      .meta-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        background: var(--pill-bg);
+        color: var(--muted);
+        border: 1px solid var(--border);
+      }
+
+      .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 16px;
+        border-radius: 999px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 600;
+        background: var(--accent-bg);
+        color: var(--accent);
+        border: 1px solid var(--accent-border);
+        transition: opacity 0.15s ease;
+      }
+
+      .btn-back:hover {
+        opacity: 0.86;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px 26px;
+      }
+
+      .card h2 {
+        margin: 0 0 12px;
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.2rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 999px;
+        background: var(--accent-bg);
+        color: var(--accent);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.78rem;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+
+      .card p {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 0.94rem;
+      }
+
+      .card p:last-child {
+        margin-bottom: 0;
+      }
+
+      .card strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      ul {
+        margin: 8px 0 12px;
+        padding-left: 20px;
+        color: var(--muted);
+        font-size: 0.93rem;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      code {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.84em;
+        padding: 2px 6px;
+        border-radius: 6px;
+        background: var(--surface-high);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+
+      .callout {
+        background: var(--accent-bg);
+        border: 1px solid var(--accent-border);
+        border-radius: var(--radius-md);
+        padding: 14px 16px;
+        margin-top: 12px;
+        font-size: 0.9rem;
+        color: var(--text);
+      }
+
+      footer {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.82rem;
+        padding-top: 8px;
+      }
+
+      footer a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      @media (max-width: 600px) {
+        .hero,
+        .card {
+          padding: 18px 18px;
+          border-radius: 22px;
+        }
+        .brand img {
+          width: 58px;
+          height: 58px;
+        }
+        .brand h1 {
+          font-size: 1.4rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <header class="hero">
+        <div class="brand">
+          <img src="/logo.svg" alt="Logo n²sac" />
+          <div>
+            <h1>Política de Privacidade</h1>
+            <p>n²sac • Cliente acadêmico para estudantes do CTI — UNESP Bauru</p>
+          </div>
+        </div>
+        <div class="meta-row">
+          <span class="pill">LGPD • Lei nº 13.709/2018</span>
+          <a class="btn-back" href="/">Voltar ao app</a>
+        </div>
+      </header>
+
+      <section class="card">
+        <h2><span class="num">1</span> Sobre o n²sac e Escopo</h2>
+        <p>
+          O <strong>n²sac</strong> é um aplicativo web e Android (<code>com.cti.n2sac</code>) desenvolvido de forma
+          independente por estudantes para facilitar o acompanhamento de boletim, frequência, alertas de novas notas
+          (Sentinela) e interação entre turmas do <strong>Colégio Técnico Industrial "Prof. Isaac Portal Roldán"
+          (CTI — UNESP Bauru)</strong>.
+        </p>
+        <p>
+          O acesso é restrito exclusivamente a estudantes com conta institucional terminada em
+          <code>@unesp.br</code>. Esta política descreve, com total transparência, quais dados são processados, como
+          são protegidos e quais controles você possui sobre eles.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2><span class="num">2</span> Dados Tratados e Finalidades</h2>
+        <ul>
+          <li>
+            <strong>Autenticação no NSAC Online:</strong> seu e-mail institucional (<code>@unesp.br</code>) e senha são
+            utilizados exclusivamente para autenticar sua sessão junto ao portal oficial do NSAC Online. O servidor
+            opera com tokens de sessão revogáveis e <strong>não expõe nem registra sua senha em logs</strong>.
+          </li>
+          <li>
+            <strong>Confirmação opcional de nome via Conta Google (<code>@unesp.br</code>):</strong> caso você escolha
+            vincular sua conta Google institucional para corrigir ou confirmar seu nome oficial completo e acentuado no
+            ranking e nas eleições da turma, o aplicativo solicita <strong>apenas os escopos básicos</strong>
+            (<code>openid</code>, <code>email</code> e <code>profile</code>). Validamos o <code>id_token</code>
+            exclusivamente para confirmar que o e-mail verificado pertence à mesma conta logada e salvar seu nome
+            oficial.
+          </li>
+          <li>
+            <strong>Dados acadêmicos (Boletim e Frequência):</strong> notas, médias, recuperações e faltas são
+            sincronizadas para exibição no aplicativo e para que o serviço <strong>Sentinela</strong> detecte novas
+            notas lançadas e envie notificações individuais.
+          </li>
+          <li>
+            <strong>Perfil, Ranking, Turma e Mensagens:</strong> nome de exibição, foto/banner de perfil, participação
+            no ranking (com opção de <strong>modo anônimo</strong>), votos de representantes de turma e mensagens em
+            canais da sala ou conversas privadas ficam restritos a usuários autenticados do sistema.
+          </li>
+          <li>
+            <strong>Notificações Push (Firebase Cloud Messaging):</strong> armazenamos o token FCM do seu dispositivo
+            exclusivamente para entregar alertas de notas, anúncios da turma e mensagens. Tokens inválidos ou
+            revogados são removidos automaticamente.
+          </li>
+          <li>
+            <strong>Telemetria técnica e diagnósticos (opcional / opt-in):</strong> somente mediante seu consentimento
+            explícito, o app pode enviar métricas técnicas anônimas de desempenho (ex.: taxa de quadros e erros de
+            interface) para melhorar a estabilidade. Nenhuma senha, cookie ou token de sessão é incluído.
+          </li>
+        </ul>
+
+        <div class="callout">
+          <strong>Conformidade com a Política de Dados de Usuário dos Serviços de API do Google (Limited Use):</strong>
+          o uso e a transferência de informações recebidas das APIs do Google pelo <strong>n²sac</strong> limitam-se
+          estritamente à exibição e verificação do seu nome oficial institucional no aplicativo. Não acessamos Gmail,
+          Google Drive, Contatos ou Agenda, não exibimos anúncios e nunca vendemos ou compartilhamos dados do Google
+          com terceiros.
+        </div>
+      </section>
+
+      <section class="card">
+        <h2><span class="num">3</span> Segurança, Armazenamento e Compartilhamento</h2>
+        <ul>
+          <li>
+            <strong>Criptografia em trânsito:</strong> toda comunicação entre o aplicativo (Web e Android), o servidor
+            do n²sac e os serviços externos ocorre exclusivamente via <strong>HTTPS/TLS</strong>.
+          </li>
+          <li>
+            <strong>Sem venda ou monetização de dados:</strong> o n²sac é um projeto estudantil sem fins lucrativos.
+            Seus dados nunca são vendidos, alugados ou cedidos para fins publicitários ou comerciais.
+          </li>
+          <li>
+            <strong>Provedores estritamente necessários:</strong> utilizamos apenas o Firebase Cloud Messaging (Google)
+            para entrega de notificações push no Android e a verificação de identidade Google OIDC quando acionada
+            voluntariamente pelo usuário.
+          </li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2><span class="num">4</span> Seus Direitos e Controles (LGPD)</h2>
+        <p>
+          Em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), você pode exercer a qualquer
+          momento os seguintes controles diretamente no aplicativo ou mediante solicitação:
+        </p>
+        <ul>
+          <li><strong>Privacidade no Ranking:</strong> ativar ou desativar o modo anônimo a qualquer momento.</li>
+          <li>
+            <strong>Notificações e Telemetria:</strong> desativar alertas push ou métricas técnicas nas configurações
+            do aplicativo.
+          </li>
+          <li>
+            <strong>Revogação do acesso Google:</strong> remover a permissão do n²sac a qualquer instante em
+            <code>myaccount.google.com/permissions</code>.
+          </li>
+          <li>
+            <strong>Encerramento e exclusão de dados:</strong> encerrar sua sessão ou solicitar a exclusão completa
+            da sua conta e dos dados associados pelo canal de contato abaixo.
+          </li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2><span class="num">5</span> Contato</h2>
+        <p>
+          Em caso de dúvidas, solicitações relacionadas à LGPD ou pedidos de exclusão de dados, utilize o menu
+          <strong>Configurações → Ajuda &amp; Melhorias</strong> dentro do aplicativo ou envie um e-mail para o
+          responsável pelo projeto:
+        </p>
+        <p>
+          <strong>E-mail de contato:</strong> <code>gabriel.camaforte.s@gmail.com</code>
+        </p>
+      </section>
+
+      <footer>
+        Última atualização: novembro de 2026 • <strong>n²sac</strong> (CTI — UNESP Bauru) •
+        <a href="/">Abrir aplicativo</a>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -164,11 +164,25 @@ const TelemetryBootstrap: React.FC = () => {
   );
 };
 
-/** Runs after the app's first commit: hands over from the boot splash (after an OTA reload). */
+/** Runs after the app's first commit: hands over from the boot splash (native Android + OTA reload). */
 const BootSplashHandoff: React.FC = () => {
   useEffect(() => {
-    const frame = requestAnimationFrame(() => finishBootSplash());
-    return () => cancelAnimationFrame(frame);
+    let f2 = 0;
+    const f1 = requestAnimationFrame(() => {
+      f2 = requestAnimationFrame(() => {
+        finishBootSplash();
+        try {
+          (window as unknown as { NsacAndroidSplash?: { onAppReady?: () => void } })
+            .NsacAndroidSplash?.onAppReady?.();
+        } catch {
+          // ignore non-Android environments
+        }
+      });
+    });
+    return () => {
+      cancelAnimationFrame(f1);
+      if (f2) cancelAnimationFrame(f2);
+    };
   }, []);
   return null;
 };

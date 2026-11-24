@@ -22,7 +22,12 @@ import {
   Minus,
   RotateCcw,
   ArrowUpDown,
+  Share2,
+  Loader2,
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { createBoletimPdfLink, fetchBoletimPdf } from '../api/nsacClient';
+import { openExternalUrl } from '../platform/openExternal';
 import { renderSubjectIcon, stripAccents } from '../utils/subjectIcons';
 import type { AllYearsResponse, FullGrades, UnifiedBimesterData, YearInfo } from '../api/types';
 import { useM3Theme } from '../theme/ThemeContext';
@@ -409,8 +414,11 @@ export function analyzeSubject(
 export const BoletimScreen: React.FC<{
   boletim: AllYearsResponse | null;
   loading: boolean;
-}> = ({ boletim, loading }) => {
+  token?: string;
+}> = ({ boletim, loading, token }) => {
   const { tokens, isMaterialYou } = useM3Theme();
+  const [sharingPdf, setSharingPdf] = useState(false);
+  const [sharePdfError, setSharePdfError] = useState<string | null>(null);
   const years = useMemo(() => {
     if (!boletim?.data?.length) return [];
     return [...boletim.data].map(normalizeYearInfo).sort((a, b) => b.year - a.year);
@@ -964,21 +972,117 @@ export const BoletimScreen: React.FC<{
             </div>
           </div>
 
-          {/* School Year Connected Pill Selector (concise year + series, no redundant course name) */}
-          {years.length > 1 && (
-            <div style={{ maxWidth: '100%', minWidth: 0 }}>
-              <EnhancedConnectedButtonGroup
-                wrap={true}
-                scrollable={false}
-                value={activeYear.year}
-                onChange={(yr) => setSelectedYearNum(Number(yr))}
-                options={years.map((y) => ({
-                  value: y.year,
-                  label: formatShortYearPill(y),
-                }))}
-              />
-            </div>
-          )}
+          {/* School Year Connected Pill Selector + Share Boletim PDF button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', maxWidth: '100%', minWidth: 0 }}>
+            {years.length > 1 && (
+              <div style={{ maxWidth: '100%', minWidth: 0 }}>
+                <EnhancedConnectedButtonGroup
+                  wrap={true}
+                  scrollable={false}
+                  value={activeYear.year}
+                  onChange={(yr) => setSelectedYearNum(Number(yr))}
+                  options={years.map((y) => ({
+                    value: y.year,
+                    label: formatShortYearPill(y),
+                  }))}
+                />
+              </div>
+            )}
+            {token && (
+              <EnhancedMorphButton
+                variant="tonal"
+                size="sm"
+                disabled={sharingPdf}
+                icon={
+                  sharingPdf ? (
+                    <Loader2 size={14} className="spin" />
+                  ) : (
+                    <Share2 size={14} />
+                  )
+                }
+                onClick={async () => {
+                  if (sharingPdf) return;
+                  setSharingPdf(true);
+                  setSharePdfError(null);
+                  try {
+                    const { blob, filename } = await fetchBoletimPdf(token, activeYear.year);
+                    const pdfFile = new File([blob], filename, { type: 'application/pdf' });
+                    if (
+                      typeof navigator !== 'undefined' &&
+                      typeof navigator.share === 'function' &&
+                      typeof navigator.canShare === 'function' &&
+                      navigator.canShare({ files: [pdfFile] })
+                    ) {
+                      try {
+                        await navigator.share({
+                          files: [pdfFile],
+                          title: `Boletim ${activeYear.year} — n²sac`,
+                          text: `Meu boletim de ${activeYear.year} gerado pelo n²sac.`,
+                        });
+                        return;
+                      } catch (err) {
+                        if (err instanceof DOMException && err.name === 'AbortError') return;
+                      }
+                    }
+                    if (Capacitor.isNativePlatform()) {
+                      const nativeBridge = (
+                        window as unknown as {
+                          NsacAndroidOpen?: {
+                            sharePdfBase64?: (
+                              base64: string,
+                              filename: string,
+                              title: string,
+                              text: string
+                            ) => boolean;
+                          };
+                        }
+                      ).NsacAndroidOpen;
+                      if (typeof nativeBridge?.sharePdfBase64 === 'function') {
+                        const base64 = await new Promise<string>((resolve, reject) => {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            const res = typeof reader.result === 'string' ? reader.result : '';
+                            const idx = res.indexOf(',');
+                            resolve(idx >= 0 ? res.slice(idx + 1) : res);
+                          };
+                          reader.onerror = () => reject(new Error('FileReader error'));
+                          reader.readAsDataURL(blob);
+                        });
+                        const ok = nativeBridge.sharePdfBase64(
+                          base64,
+                          filename,
+                          `Boletim ${activeYear.year} — n²sac`,
+                          `Meu boletim de ${activeYear.year} gerado pelo n²sac.`
+                        );
+                        if (ok) return;
+                      }
+                      const url = await createBoletimPdfLink(token, activeYear.year);
+                      await openExternalUrl(url);
+                      return;
+                    }
+                    const objUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = objUrl;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.setTimeout(() => URL.revokeObjectURL(objUrl), 5000);
+                  } catch {
+                    setSharePdfError('Não foi possível gerar o PDF agora.');
+                    window.setTimeout(() => setSharePdfError(null), 4000);
+                  } finally {
+                    setSharingPdf(false);
+                  }
+                }}
+              >
+                {sharingPdf ? 'Gerando PDF...' : 'Compartilhar PDF'}
+              </EnhancedMorphButton>
+            )}
+            {sharePdfError && (
+              <span style={{ fontSize: '0.74rem', color: tokens.error }}>{sharePdfError}</span>
+            )}
+          </div>
         </div>
 
         {/* Hero Metrics Grid */}

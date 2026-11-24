@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { M3_SPRINGS, useSpringValue } from '../theme/springPhysics';
 import { useM3Theme } from '../theme/ThemeContext';
-import { IconShapeContainer } from './expressive/ExpressivePrimitives';
+import { N2sacLogo } from './N2sacLogo';
 import { MorphingShapeIndicator } from './expressive/ShapeMorph';
 import { MobilePullToRefreshContainer } from './expressive/WavyProgressIndicator';
 import { useMinimumBusy } from '../theme/motion';
@@ -285,9 +285,7 @@ export const ExpressiveNavigationShell: React.FC<{
       >
         <div className="nsac-rail-header">
           <div className="nsac-rail-fade nsac-rail-brand">
-            <IconShapeContainer size={46} active={showRefreshing} morphing={showRefreshing}>
-              <GraduationCap size={22} />
-            </IconShapeContainer>
+            <N2sacLogo size={56} mode={showRefreshing ? 'spin' : 'settle'} />
             <div style={{ minWidth: 0 }}>
               <div
                 style={{
@@ -455,9 +453,7 @@ export const ExpressiveNavigationShell: React.FC<{
               border: `1px solid ${tokens.outlineVariant}`,
             }}
           >
-            <IconShapeContainer size={32} active={showRefreshing} morphing={showRefreshing}>
-              <GraduationCap size={16} />
-            </IconShapeContainer>
+            <N2sacLogo size={42} mode={showRefreshing ? 'spin' : 'settle'} />
             <span
               style={{
                 fontFamily: 'Outfit, sans-serif',

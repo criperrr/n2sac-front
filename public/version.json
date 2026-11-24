@@ -1,10 +1,10 @@
 {
-  "version": "1.5.0",
-  "buildId": "2026-11-23T12:24:36Z",
+  "version": "1.6.0",
+  "buildId": "2026-11-24T23:24:00Z",
   "channel": "ota",
   "important": true,
-  "apkVersion": "1.5.0",
-  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.5.0/n2sac-1.5.0.apk",
-  "apkSha256": "ebda0cf28101f2945393179c9f45485ec5b981078e0ace8942f07ae4530ef10e",
-  "notes": "Canais da Turma (Anúncios, Chat e Off-Topic), Eleição de Representantes contínua, acúmulo inteligente de notificações de notas, popup automático de novidades com animação de odômetro + contorno AOSP para nota 10 e otimizações de desempenho."
+  "apkVersion": "1.6.0",
+  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.0/n2sac-1.6.0.apk",
+  "apkSha256": "",
+  "notes": "Nova identidade visual adaptativa Monet (logo n²sac com giro GPU 120fps, splash dinâmica com explosão e frenagem, ícones do launcher por tema), página pública /inicio e /privacidade, conexões de perfil, exportação de boletim PDF e melhorias de desempenho."
 }

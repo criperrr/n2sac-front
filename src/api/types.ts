@@ -181,6 +181,14 @@ export interface RankingPreferences {
   updated_at: string;
 }
 
+export interface AccountTagBadge {
+  slug: string;
+  label: string;
+  description: string;
+  color_hex: string;
+  priority: number;
+}
+
 export interface LeaderboardEntry {
   rank: number;
   account_id: number;
@@ -198,6 +206,7 @@ export interface LeaderboardEntry {
   posted_bimesters_count: number;
   subjects_count: number;
   total_absences: number;
+  tags?: AccountTagBadge[];
 }
 
 export interface SubjectComparisonRow {
@@ -255,6 +264,38 @@ export interface StudentSearchResult {
   relationship?: RelationshipStatus;
 }
 
+export type ConnectionVerificationSource = 'manual' | 'oauth' | 'discord_import';
+
+export interface PublicConnection {
+  provider: string;
+  handle: string;
+  display_name: string | null;
+  profile_url: string | null;
+  verification_source: ConnectionVerificationSource;
+  is_verified: boolean;
+}
+
+export interface AccountConnection extends PublicConnection {
+  is_visible: boolean;
+  display_order: number;
+  updated_at: string;
+}
+
+export interface ConnectionProviderDescriptor {
+  id: string;
+  label: string;
+  placeholder: string;
+  supports_oauth: boolean;
+  oauth_enabled: boolean;
+  supports_discord_import: boolean;
+}
+
+export interface AccountConnectionsPayload {
+  connections: AccountConnection[];
+  providers: ConnectionProviderDescriptor[];
+  max_connections: number;
+}
+
 /** `GET /api/v1/profiles/{account_id}`: a classmate's public profile. */
 export interface PublicProfile {
   account_id: number;
@@ -267,6 +308,7 @@ export interface PublicProfile {
   followers_count?: number;
   following_count?: number;
   relationship?: RelationshipStatus;
+  connections?: PublicConnection[];
 }
 
 export interface SocialUserSummary {
@@ -555,6 +597,7 @@ export interface ClassroomChatMessage {
   sender_label: string;
   sender_avatar_url: string | null;
   sender_is_representative: boolean;
+  sender_tags?: AccountTagBadge[];
   is_me: boolean;
   text: string;
   attachment_url: string | null;

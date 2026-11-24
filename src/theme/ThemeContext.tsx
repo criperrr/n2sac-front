@@ -19,6 +19,59 @@ import {
 } from './materialYou';
 
 const STORAGE_KEY = 'nsac_design_system_theme_v4';
+const CUSTOMIZED_THEME_KEY = 'nsac_user_customized_theme_v1';
+
+function resolveLauncherThemeKey(
+  settings: AdaptiveThemeSettings,
+  effectiveSeedHex: string,
+  hasUserCustomized: boolean
+): string {
+  // Default fallback before user explicitly picks a theme in-app (or when following Android Monet):
+  if (!hasUserCustomized || settings.useSystemDynamicColor) {
+    return 'system';
+  }
+  if (settings.designSystem !== 'material-you' || settings.presetId === EDITORIAL_PRESET_ID) {
+    return 'editorial';
+  }
+  switch (settings.presetId) {
+    case 'cti-info':
+      return 'blue';
+    case 'cti-mecanica':
+      return 'green';
+    case 'aperture-purple':
+      return 'purple';
+    case 'ocean-teal':
+      return 'teal';
+    case 'cti-eletronica':
+      return 'amber';
+    case 'cinema-red':
+      return 'coral';
+    case 'neon-pink':
+      return 'rose';
+    default: {
+      // Closest Monet hue family for custom color picker hexes
+      const clean = effectiveSeedHex.replace('#', '');
+      const r = parseInt(clean.slice(0, 2), 16) / 255;
+      const g = parseInt(clean.slice(2, 4), 16) / 255;
+      const b = parseInt(clean.slice(4, 6), 16) / 255;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      if (max - min < 0.08) return 'editorial';
+      let h = 0;
+      if (max === r) h = ((g - b) / (max - min)) % 6;
+      else if (max === g) h = (b - r) / (max - min) + 2;
+      else h = (r - g) / (max - min) + 4;
+      const deg = (h * 60 + 360) % 360;
+      if (deg < 22 || deg >= 342) return 'coral';
+      if (deg < 68) return 'amber';
+      if (deg < 165) return 'green';
+      if (deg < 205) return 'teal';
+      if (deg < 252) return 'blue';
+      if (deg < 305) return 'purple';
+      return 'rose';
+    }
+  }
+}
 
 export interface AdaptiveThemeSettings {
   designSystem: DesignSystemMode;
@@ -361,15 +414,40 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     try {
       const androidTheme = (window as unknown as {
-        NsacAndroidTheme?: { setLightSystemBars?: (isLight: boolean) => void };
+        NsacAndroidTheme?: {
+          setLightSystemBars?: (isLight: boolean) => void;
+          setAppThemeIcon?: (themeKey: string) => void;
+        };
       }).NsacAndroidTheme;
       androidTheme?.setLightSystemBars?.(!effectiveIsDark);
+      const hasUserCustomized = localStorage.getItem(CUSTOMIZED_THEME_KEY) === '1';
+      const launcherKey = resolveLauncherThemeKey(settings, effectiveSeedHex, hasUserCustomized);
+      androidTheme?.setAppThemeIcon?.(launcherKey);
     } catch {
       // ignore non-Android environments
     }
-  }, [tokens, effectiveIsDark, effectiveIsAmoled, effectiveStyle, settings.designSystem]);
+  }, [
+    tokens,
+    effectiveIsDark,
+    effectiveIsAmoled,
+    effectiveStyle,
+    effectiveSeedHex,
+    settings,
+  ]);
 
   const updateSettings = useCallback((patch: Partial<AdaptiveThemeSettings>) => {
+    if (
+      patch.designSystem !== undefined ||
+      patch.presetId !== undefined ||
+      patch.seedHex !== undefined ||
+      patch.useSystemDynamicColor !== undefined
+    ) {
+      try {
+        localStorage.setItem(CUSTOMIZED_THEME_KEY, '1');
+      } catch {
+        // ignore storage errors
+      }
+    }
     setSettings((prev) => ({ ...prev, ...patch }));
   }, []);
 
@@ -390,6 +468,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // Apply the new design system at the peak of the loading animation (640ms)
       const applyTimer = window.setTimeout(() => {
+        try {
+          localStorage.setItem(CUSTOMIZED_THEME_KEY, '1');
+        } catch {
+          // ignore storage errors
+        }
         setSettings((prev) => {
           if (target === 'material-you') {
             const fallbackPreset =

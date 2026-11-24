@@ -7,16 +7,14 @@ import {
   EyeOff,
   Sparkles,
   AlertCircle,
-  GraduationCap,
 } from 'lucide-react';
+import { N2sacLogo } from '../components/N2sacLogo';
 import { loginNsacZeroTrust, NsacApiClientError } from '../api/nsacClient';
 import type { LoginResponse } from '../api/types';
-import { M3_SPRINGS, useSpringValue } from '../theme/springPhysics';
 import { useM3Theme } from '../theme/ThemeContext';
 import {
   EnhancedMorphButton,
   ExpressiveSegmentedCard,
-  IconShapeContainer,
 } from '../components/expressive/ExpressivePrimitives';
 import { MorphingShapeIndicator } from '../components/expressive/ShapeMorph';
 
@@ -31,20 +29,23 @@ export const LoginScreen: React.FC<{
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const heroRotation = useSpringValue(loading ? 180 : 0, M3_SPRINGS.slowSpatial);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!email.trim() || !password.trim()) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password.trim()) {
       setErrorMsg('Informe seu e-mail institucional e senha do NSAC.');
+      return;
+    }
+    if (!/^[^\s@]+@unesp\.br$/i.test(normalizedEmail)) {
+      setErrorMsg('Apenas e-mails institucionais terminados em @unesp.br são aceitos no NSAC.');
       return;
     }
 
     setLoading(true);
     try {
-      const session = await loginNsacZeroTrust(email, password);
+      const session = await loginNsacZeroTrust(normalizedEmail, password);
       if (session.class_code) {
         applyCourseClassCode(session.class_code);
       }
@@ -76,8 +77,8 @@ export const LoginScreen: React.FC<{
         {/* Header Card: Only Icon on the Left, n²sac + CTI subtitle on the Right */}
         <div
           style={{
-            borderRadius: isMaterialYou ? 32 : 12,
-            padding: isMaterialYou ? '22px 24px' : '18px 20px',
+            borderRadius: isMaterialYou ? 28 : 12,
+            padding: isMaterialYou ? '12px 18px' : '10px 16px',
             backgroundColor: tokens.surfaceContainerLow,
             border: `1px solid ${tokens.outlineVariant}`,
             position: 'relative',
@@ -109,10 +110,8 @@ export const LoginScreen: React.FC<{
               zIndex: 1,
             }}
           >
-            <div style={{ transform: isMaterialYou ? `rotate(${heroRotation}deg)` : undefined, flexShrink: 0 }}>
-              <IconShapeContainer size={isMaterialYou ? 56 : 44} active={loading} morphing={loading}>
-                <GraduationCap size={isMaterialYou ? 27 : 21} />
-              </IconShapeContainer>
+            <div style={{ flexShrink: 0 }}>
+              <N2sacLogo size={isMaterialYou ? 115 : 100} mode={loading ? 'spin' : 'static'} />
             </div>
             <div style={{ minWidth: 0 }}>
               <h1

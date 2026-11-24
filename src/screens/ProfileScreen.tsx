@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, Check, LogOut, Image as ImageIcon } from 'lucide-react';
+import { BadgeCheck, Camera, Check, LogOut, Image as ImageIcon, ShieldCheck } from 'lucide-react';
 import {
   fetchUserProfile,
   loadCachedUserProfile,
   updateUserProfile,
+  verifyGoogleOfficialName,
   type UserProfileData,
 } from '../api/nsacClient';
 import type { AccountProfileResponse } from '../api/types';
@@ -12,15 +13,24 @@ import { EnhancedMorphButton, ExpressiveSegmentedCard } from '../components/expr
 import { MorphingShapeIndicator } from '../components/expressive/ShapeMorph';
 import { useMinimumBusy } from '../theme/motion';
 import { PrivacySettingsCard } from '../components/PrivacySettingsCard';
+import { ProfileConnectionsCard } from '../components/profile/ProfileConnectionsCard';
 import { SocialHubCard } from '../components/social/SocialHubCard';
 import { compressImageToDataUrl } from '../utils/imageCompress';
 
 export function extractFirstNameFromEmail(email?: string | null): string {
   if (!email) return 'Aluno';
   const local = email.split('@')[0]?.trim() ?? '';
-  const first = local.split(/[._-]/)[0]?.trim() ?? '';
-  if (!first) return 'Aluno';
-  return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
+  const parts = local
+    .split(/[._-]/)
+    .map((p) => p.replace(/\d+$/, '').trim())
+    .filter(Boolean);
+  if (parts.length === 0) return 'Aluno';
+  const fmt = (s: string) =>
+    s.length === 1 ? `${s.toUpperCase()}.` : s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  if (parts[0]!.length <= 2 && parts.length > 1) {
+    return parts.map(fmt).join(' ');
+  }
+  return parts.map(fmt).join(' ');
 }
 
 export const ProfileScreen: React.FC<{
@@ -317,6 +327,17 @@ export const ProfileScreen: React.FC<{
             </div>
           </div>
 
+          {/* Official Institutional Name Verification via Google (@unesp.br) */}
+          <GoogleOfficialNameCard
+            token={token}
+            nsacEmail={accountProfile?.nsac_email ?? null}
+            profile={profile}
+            onVerified={(updated) => {
+              setProfile(updated);
+              setStatusMsg(`Nome oficial confirmado via Google: ${updated.verified_official_name ?? updated.first_name}`);
+            }}
+          />
+
           {/* Edit Profile Form */}
           <ExpressiveSegmentedCard index={0} total={1} style={{ padding: '20px 22px' }}>
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -391,6 +412,8 @@ export const ProfileScreen: React.FC<{
           </ExpressiveSegmentedCard>
       </div>
 
+      <ProfileConnectionsCard token={token} refreshSignal={refreshSignal} />
+
       <SocialHubCard token={token} />
 
       <PrivacySettingsCard token={token} refreshSignal={refreshSignal} />
@@ -402,5 +425,226 @@ export const ProfileScreen: React.FC<{
         </EnhancedMorphButton>
       </div>
     </div>
+  );
+};
+
+interface GoogleIdClient {
+  initialize: (cfg: {
+    client_id: string;
+    callback: (resp: { credential?: string }) => void;
+    hosted_domain?: string;
+    login_hint?: string;
+    ux_mode?: 'popup' | 'redirect';
+  }) => void;
+  renderButton: (
+    parent: HTMLElement,
+    options: { theme?: string; size?: string; shape?: string; text?: string; locale?: string; width?: number }
+  ) => void;
+  prompt: () => void;
+}
+
+declare global {
+  interface Window {
+    google?: {
+      accounts?: {
+        id?: GoogleIdClient;
+      };
+    };
+  }
+}
+
+let gsiScriptPromise: Promise<void> | null = null;
+function loadGoogleIdentityScript(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.reject(new Error('No window'));
+  if (window.google?.accounts?.id) return Promise.resolve();
+  if (gsiScriptPromise) return gsiScriptPromise;
+  gsiScriptPromise = new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error('Falha ao carregar Google Identity Services')), { once: true });
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Falha ao carregar Google Identity Services'));
+    document.head.appendChild(script);
+  });
+  return gsiScriptPromise;
+}
+
+const GoogleOfficialNameCard: React.FC<{
+  token: string;
+  nsacEmail: string | null;
+  profile: UserProfileData | null;
+  onVerified: (updated: UserProfileData) => void;
+}> = ({ token, nsacEmail, profile, onVerified }) => {
+  const { tokens, isMaterialYou, effectiveIsDark } = useM3Theme();
+  const [verifying, setVerifying] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [gsiReady, setGsiReady] = useState(false);
+  const buttonHostRef = useRef<HTMLDivElement | null>(null);
+
+  const clientId =
+    profile?.google_oauth_client_id?.trim() ||
+    ((import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID as string | undefined)?.trim() || '');
+  const verifiedName = profile?.verified_official_name?.trim() || null;
+  const needsVerification = Boolean(profile?.official_name_needs_verification) && !verifiedName;
+
+  useEffect(() => {
+    if (verifiedName || !clientId) return;
+    let cancelled = false;
+    loadGoogleIdentityScript()
+      .then(() => {
+        if (cancelled) return;
+        const gsi = window.google?.accounts?.id;
+        if (!gsi || !buttonHostRef.current) return;
+        gsi.initialize({
+          client_id: clientId,
+          hosted_domain: 'unesp.br',
+          login_hint: nsacEmail ?? undefined,
+          ux_mode: 'popup',
+          callback: (resp) => {
+            if (!resp.credential) {
+              setErrorMsg('Não recebemos a credencial do Google. Tente novamente.');
+              return;
+            }
+            setVerifying(true);
+            setErrorMsg(null);
+            void verifyGoogleOfficialName(token, resp.credential)
+              .then((updated) => {
+                onVerified(updated);
+              })
+              .catch((err) => {
+                setErrorMsg(
+                  err instanceof Error
+                    ? err.message
+                    : 'Não foi possível confirmar o nome oficial com o Google.'
+                );
+              })
+              .finally(() => {
+                setVerifying(false);
+              });
+          },
+        });
+        buttonHostRef.current.innerHTML = '';
+        gsi.renderButton(buttonHostRef.current, {
+          theme: effectiveIsDark ? 'filled_black' : 'outline',
+          size: 'large',
+          shape: isMaterialYou ? 'pill' : 'rectangular',
+          text: 'continue_with',
+          locale: 'pt-BR',
+        });
+        setGsiReady(true);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setErrorMsg(err instanceof Error ? err.message : 'Erro ao carregar login do Google.');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [verifiedName, clientId, nsacEmail, token, onVerified, effectiveIsDark, isMaterialYou]);
+
+  if (verifiedName) {
+    return (
+      <ExpressiveSegmentedCard index={0} total={1} style={{ padding: '14px 18px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: isMaterialYou ? 12 : 8,
+              backgroundColor: tokens.gradeSuccessContainer,
+              color: tokens.onGradeSuccessContainer,
+              display: 'grid',
+              placeItems: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <BadgeCheck size={18} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: tokens.gradeSuccess, textTransform: 'uppercase' }}>
+              Nome oficial confirmado via Google (@unesp.br)
+            </div>
+            <div style={{ fontSize: '0.92rem', fontWeight: 800, color: tokens.onSurface, marginTop: 1 }}>
+              {verifiedName}
+            </div>
+          </div>
+        </div>
+      </ExpressiveSegmentedCard>
+    );
+  }
+
+  return (
+    <ExpressiveSegmentedCard
+      index={0}
+      total={1}
+      style={{
+        padding: '16px 18px',
+        border: needsVerification ? `1px solid ${tokens.primary}` : undefined,
+        backgroundColor: needsVerification ? tokens.primaryContainer + '28' : undefined,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+        <div
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: isMaterialYou ? 12 : 8,
+            backgroundColor: tokens.primaryContainer,
+            color: tokens.onPrimaryContainer,
+            display: 'grid',
+            placeItems: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <ShieldCheck size={17} />
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontWeight: 800, fontSize: '0.9rem', color: tokens.onSurface }}>
+            {needsVerification
+              ? 'Seu e-mail institucional abrevia seu nome'
+              : 'Confirmar nome oficial com Google (@unesp.br)'}
+          </div>
+          <div style={{ fontSize: '0.78rem', color: tokens.onSurfaceVariant, lineHeight: 1.45, marginTop: 2 }}>
+            {needsVerification
+              ? 'Confirme em 1 toque com sua conta Google da UNESP para puxar seu nome completo oficial automaticamente — sem precisar pedir aprovação manual.'
+              : 'Use sua conta Google institucional (@unesp.br) para sincronizar seu nome oficial completo e acentuado no ranking e nas eleições da turma.'}
+          </div>
+        </div>
+      </div>
+
+      {clientId ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div ref={buttonHostRef} style={{ minHeight: 40 }} />
+          {!gsiReady && !errorMsg && (
+            <div style={{ fontSize: '0.76rem', color: tokens.onSurfaceVariant }}>
+              Carregando verificação do Google...
+            </div>
+          )}
+          {verifying && (
+            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: tokens.primary }}>
+              Validando conta @unesp.br com o Google...
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ fontSize: '0.76rem', color: tokens.onSurfaceVariant }}>
+          Aguardando configuração de <code>GOOGLE_OAUTH_CLIENT_ID</code> no servidor para ativar a confirmação via Google.
+        </div>
+      )}
+
+      {errorMsg && (
+        <div style={{ fontSize: '0.78rem', fontWeight: 600, color: tokens.error, marginTop: 8 }}>
+          {errorMsg}
+        </div>
+      )}
+    </ExpressiveSegmentedCard>
   );
 };

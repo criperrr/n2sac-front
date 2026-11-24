@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Calendar,
   Camera,
+  Check,
+  Copy,
   Crown,
   Eye,
   Megaphone,
@@ -9,6 +11,7 @@ import {
   Pin,
   Plus,
   Search,
+  Share2,
   ShieldCheck,
   Sparkles,
   Tag,
@@ -483,9 +486,21 @@ export const TurmaScreen: React.FC<{
             {room.member_count} / {room.min_members_required} alunos — faltam{' '}
             {Math.max(0, room.min_members_required - room.member_count)} colegas entrarem no n²sac
           </div>
+          <ClassroomShareInviteBanner
+            classCode={room.class_code}
+            missingCount={Math.max(0, room.min_members_required - room.member_count)}
+            variant="locked"
+          />
         </ExpressiveSegmentedCard>
       ) : (
         <>
+          {room.member_count < 12 && (
+            <ClassroomShareInviteBanner
+              classCode={room.class_code}
+              missingCount={0}
+              variant="growing"
+            />
+          )}
           {/* 3. TWO DISTINCT CHAT BUTTONS (Chat da Turma + Chat Off-Topic) */}
           <div
             style={{
@@ -1277,6 +1292,194 @@ export const TurmaScreen: React.FC<{
           onClose={() => setLightboxUrl(null)}
         />
       )}
+    </div>
+  );
+};
+
+const CLASSROOM_SHARE_URL = 'https://notebook-server.tailddd6bf.ts.net';
+const CLASSROOM_SHARE_DISMISS_KEY = 'n2sac.turma_share_dismissed_at.v1';
+const CLASSROOM_SHARE_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
+
+async function copyInviteTextSafe(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // fallback below
+  }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', 'true');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+const ClassroomShareInviteBanner: React.FC<{
+  classCode: string;
+  missingCount: number;
+  variant: 'locked' | 'growing';
+}> = ({ classCode, missingCount, variant }) => {
+  const { tokens, isMaterialYou } = useM3Theme();
+  const [copied, setCopied] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    if (variant !== 'growing') return false;
+    try {
+      const raw = localStorage.getItem(CLASSROOM_SHARE_DISMISS_KEY);
+      if (!raw) return false;
+      return Date.now() - Number(raw) < CLASSROOM_SHARE_DISMISS_MS;
+    } catch {
+      return false;
+    }
+  });
+
+  if (dismissed) return null;
+
+  const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  const invitePitch =
+    variant === 'locked' && missingCount > 0
+      ? `Faltam só ${missingCount} ${missingCount === 1 ? 'pessoa' : 'pessoas'} da ${classCode} pra liberar o canal da turma no n²sac! Ele avisa no celular na hora que sai nota no NSAC, mostra o boletim completo e tem ranking da sala.`
+      : `Entra no n²sac da ${classCode}! Ele avisa no celular na hora que sai nota no NSAC, mostra o boletim completo e tem o canal da turma.`;
+  const fullInviteMessage = `${invitePitch}\n${CLASSROOM_SHARE_URL}`;
+
+  const handleCopyInvite = async () => {
+    const ok = await copyInviteTextSafe(fullInviteMessage);
+    if (ok) {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleShare = async () => {
+    if (canNativeShare) {
+      try {
+        await navigator.share({
+          title: `n²sac — Turma ${classCode}`,
+          text: invitePitch,
+          url: CLASSROOM_SHARE_URL,
+        });
+        return;
+      } catch {
+        // user cancelled share sheet
+        return;
+      }
+    }
+    await handleCopyInvite();
+  };
+
+  const handleDismiss = () => {
+    try {
+      localStorage.setItem(CLASSROOM_SHARE_DISMISS_KEY, String(Date.now()));
+    } catch {
+      // ignore storage errors
+    }
+    setDismissed(true);
+  };
+
+  const isLocked = variant === 'locked';
+
+  return (
+    <div
+      style={{
+        marginTop: isLocked ? 14 : 0,
+        padding: isLocked ? '14px 14px' : '14px 16px',
+        borderRadius: isMaterialYou ? 20 : 12,
+        backgroundColor: isLocked ? tokens.primaryContainer : tokens.surfaceContainerLow,
+        color: isLocked ? tokens.onPrimaryContainer : tokens.onSurface,
+        border: `1px solid ${isLocked ? tokens.primary + '38' : tokens.outlineVariant}`,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minWidth: 0 }}>
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: isMaterialYou ? 12 : 8,
+              backgroundColor: isLocked ? tokens.primary : tokens.primaryContainer,
+              color: isLocked ? tokens.onPrimary : tokens.onPrimaryContainer,
+              display: 'grid',
+              placeItems: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Share2 size={16} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: '0.88rem', lineHeight: 1.25 }}>
+              {isLocked
+                ? `Mande o convite no grupo da ${classCode}`
+                : `Chame o resto da ${classCode} para o n²sac`}
+            </div>
+            <div
+              style={{
+                fontSize: '0.77rem',
+                lineHeight: 1.4,
+                marginTop: 2,
+                color: isLocked ? tokens.onPrimaryContainer : tokens.onSurfaceVariant,
+                opacity: isLocked ? 0.9 : 1,
+              }}
+            >
+              {isLocked
+                ? 'Compartilhe o link rápido no WhatsApp da sala — entrando pelo celular o pessoal já baixa o app e libera o canal.'
+                : 'Quanto mais colegas da sala usarem, mais completo fica o canal, o ranking e os avisos de notas.'}
+            </div>
+          </div>
+        </div>
+        {!isLocked && (
+          <button
+            type="button"
+            onClick={handleDismiss}
+            aria-label="Dispensar convite"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: 4,
+              cursor: 'pointer',
+              color: tokens.onSurfaceVariant,
+              display: 'grid',
+              placeItems: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <EnhancedMorphButton
+          size="sm"
+          variant="filled"
+          icon={copied && !canNativeShare ? <Check size={14} /> : <Share2 size={14} />}
+          onClick={() => void handleShare()}
+        >
+          {copied && !canNativeShare ? 'Convite copiado!' : 'Compartilhar convite'}
+        </EnhancedMorphButton>
+        {canNativeShare && (
+          <EnhancedMorphButton
+            size="sm"
+            variant="tonal"
+            icon={copied ? <Check size={14} /> : <Copy size={14} />}
+            onClick={() => void handleCopyInvite()}
+          >
+            {copied ? 'Copiado!' : 'Copiar texto + link'}
+          </EnhancedMorphButton>
+        )}
+      </div>
     </div>
   );
 };

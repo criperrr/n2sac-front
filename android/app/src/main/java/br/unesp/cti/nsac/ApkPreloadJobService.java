@@ -1,4 +1,4 @@
-package br.unesp.cti.nsac.aperture;
+package br.unesp.cti.nsac;
 
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;

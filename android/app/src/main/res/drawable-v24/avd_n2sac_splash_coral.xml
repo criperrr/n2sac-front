@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/vd_n2sac_splash_coral">
+    <target android:name="logo_root" android:animation="@animator/anim_n2sac_root_scale" />
+    <target android:name="orbital_1" android:animation="@animator/anim_n2sac_orb1_spin" />
+    <target android:name="orbital_2" android:animation="@animator/anim_n2sac_orb2_spin" />
+    <target android:name="seal_assembly" android:animation="@animator/anim_n2sac_seal_spin" />
+    <target android:name="typography" android:animation="@animator/anim_n2sac_typo_scale" />
+</animated-vector>

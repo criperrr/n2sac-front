@@ -6,6 +6,11 @@ import {
   ShareAppPromptModal,
   shouldTriggerRareSharePrompt,
 } from './components/ShareAppPromptModal';
+import {
+  GoogleNamePromptModal,
+  hasSeenGoogleNamePrompt,
+  markGoogleNamePromptSeen,
+} from './components/GoogleNamePromptModal';
 import { FeedbackSettingsSection } from './components/settings/FeedbackSettings';
 import { NotificationSettingsSection } from './components/settings/NotificationSettings';
 import {
@@ -30,6 +35,7 @@ import {
   fetchHomeInfo,
   fetchRankingPreferences,
   fetchSaidas,
+  fetchUserProfile,
   loadCachedResource,
   loadStoredSession,
   logoutNsacSession,
@@ -267,6 +273,37 @@ export const App: React.FC = () => {
   }, [cancelSharePromptTimer]);
   const [rankingPrefs, setRankingPrefs] = useState<RankingPreferences | null>(null);
   const [savingRankingConsent, setSavingRankingConsent] = useState(false);
+  const [googleNamePrompt, setGoogleNamePrompt] = useState<{
+    currentName: string;
+    needsVerification: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!session) {
+      setGoogleNamePrompt(null);
+      return;
+    }
+    if (hasSeenGoogleNamePrompt(session.account_id)) return;
+    let cancelled = false;
+    fetchUserProfile(session.token)
+      .then((p) => {
+        if (cancelled) return;
+        if (p.verified_official_name || !p.official_name_needs_verification) {
+          markGoogleNamePromptSeen(session.account_id);
+          return;
+        }
+        setGoogleNamePrompt({
+          currentName: p.display_name?.trim() || p.first_name,
+          needsVerification: true,
+        });
+      })
+      .catch(() => {
+        // ignore transient errors; will try again next launch
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
   const [fichas, setFichas] = useState<FichaAvaliacaoEntry[]>(() => {
     const s = loadStoredSession();
     if (!s) return [];
@@ -862,6 +899,26 @@ export const App: React.FC = () => {
         <ShareAppPromptModal
           open={sharePromptOpen}
           onClose={() => setSharePromptOpen(false)}
+        />
+        <GoogleNamePromptModal
+          open={Boolean(
+            googleNamePrompt &&
+              !gradeNotifDetail &&
+              !sharePromptOpen &&
+              !(rankingPrefs && !rankingPrefs.has_decided)
+          )}
+          currentName={googleNamePrompt?.currentName ?? ''}
+          nsacEmail={session.nsac_email}
+          needsVerification={Boolean(googleNamePrompt?.needsVerification)}
+          onGoToProfile={() => {
+            markGoogleNamePromptSeen(session.account_id);
+            setGoogleNamePrompt(null);
+            selectTab('profile');
+          }}
+          onDismiss={() => {
+            markGoogleNamePromptSeen(session.account_id);
+            setGoogleNamePrompt(null);
+          }}
         />
         <RankingConsentModal
           open={Boolean(rankingPrefs && !rankingPrefs.has_decided)}

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- System fallback (pre-Android 12 grayscale contrasts; overridden by Monet on API 31+) -->
+    <color name="n2sac_logo_bg">#F6F6F7</color>
+    <color name="n2sac_logo_seal">#26282C</color>
+    <color name="n2sac_logo_orbital_1">#757575</color>
+    <color name="n2sac_logo_orbital_2">#A8A8A8</color>
+    <color name="n2sac_logo_text">#111214</color>
+    <!-- App Theme: editorial (light) -->
+    <color name="n2sac_editorial_bg">#F6F6F7</color>
+    <color name="n2sac_editorial_seal">#26282C</color>
+    <color name="n2sac_editorial_orb1">#757575</color>
+    <color name="n2sac_editorial_orb2">#A8A8A8</color>
+    <color name="n2sac_editorial_text">#111214</color>
+    <!-- App Theme: blue (light) -->
+    <color name="n2sac_blue_bg">#F9F9FF</color>
+    <color name="n2sac_blue_seal">#445E91</color>
+    <color name="n2sac_blue_orb1">#715573</color>
+    <color name="n2sac_blue_orb2">#575E71</color>
+    <color name="n2sac_blue_text">#1A1B20</color>
+    <!-- App Theme: green (light) -->
+    <color name="n2sac_green_bg">#F5FBF5</color>
+    <color name="n2sac_green_seal">#226A4C</color>
+    <color name="n2sac_green_orb1">#3D6473</color>
+    <color name="n2sac_green_orb2">#4D6357</color>
+    <color name="n2sac_green_text">#171D19</color>
+    <!-- App Theme: purple (light) -->
+    <color name="n2sac_purple_bg">#FDF7FF</color>
+    <color name="n2sac_purple_seal">#63568F</color>
+    <color name="n2sac_purple_orb1">#7D5261</color>
+    <color name="n2sac_purple_orb2">#615B71</color>
+    <color name="n2sac_purple_text">#1C1B20</color>
+    <!-- App Theme: teal (light) -->
+    <color name="n2sac_teal_bg">#F5FAFC</color>
+    <color name="n2sac_teal_seal">#00687A</color>
+    <color name="n2sac_teal_orb1">#565D7E</color>
+    <color name="n2sac_teal_orb2">#4B6269</color>
+    <color name="n2sac_teal_text">#171C1E</color>
+    <!-- App Theme: amber (light) -->
+    <color name="n2sac_amber_bg">#FFF8F4</color>
+    <color name="n2sac_amber_seal">#825513</color>
+    <color name="n2sac_amber_orb1">#54643D</color>
+    <color name="n2sac_amber_orb2">#715A41</color>
+    <color name="n2sac_amber_text">#211A13</color>
+    <!-- App Theme: coral (light) -->
+    <color name="n2sac_coral_bg">#FFF8F7</color>
+    <color name="n2sac_coral_seal">#904A46</color>
+    <color name="n2sac_coral_orb1">#725B2E</color>
+    <color name="n2sac_coral_orb2">#775654</color>
+    <color name="n2sac_coral_text">#231919</color>
+    <!-- App Theme: rose (light) -->
+    <color name="n2sac_rose_bg">#FFF8F8</color>
+    <color name="n2sac_rose_seal">#8A4A65</color>
+    <color name="n2sac_rose_orb1">#7E5537</color>
+    <color name="n2sac_rose_orb2">#735760</color>
+    <color name="n2sac_rose_text">#21191C</color>
+
+    <!-- Explicit Dark/Light Splash Backgrounds for Android 12+ setSplashScreenTheme -->
+    <color name="n2sac_editorial_dark_bg">#111214</color>
+    <color name="n2sac_editorial_light_bg">#F6F6F7</color>
+    <color name="n2sac_blue_dark_bg">#111318</color>
+    <color name="n2sac_blue_light_bg">#F9F9FF</color>
+    <color name="n2sac_green_dark_bg">#0F1511</color>
+    <color name="n2sac_green_light_bg">#F5FBF5</color>
+    <color name="n2sac_purple_dark_bg">#141318</color>
+    <color name="n2sac_purple_light_bg">#FDF7FF</color>
+    <color name="n2sac_teal_dark_bg">#0F1416</color>
+    <color name="n2sac_teal_light_bg">#F5FAFC</color>
+    <color name="n2sac_amber_dark_bg">#18120C</color>
+    <color name="n2sac_amber_light_bg">#FFF8F4</color>
+    <color name="n2sac_coral_dark_bg">#1A1111</color>
+    <color name="n2sac_coral_light_bg">#FFF8F7</color>
+    <color name="n2sac_rose_dark_bg">#191114</color>
+    <color name="n2sac_rose_light_bg">#FFF8F8</color>
+</resources>

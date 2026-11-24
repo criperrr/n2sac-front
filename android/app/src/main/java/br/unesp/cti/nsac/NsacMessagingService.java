@@ -1,4 +1,4 @@
-package br.unesp.cti.nsac.aperture;
+package br.unesp.cti.nsac;
 
 import androidx.annotation.NonNull;
 import com.capacitorjs.plugins.pushnotifications.MessagingService;

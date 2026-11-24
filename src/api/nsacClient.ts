@@ -101,10 +101,19 @@ export function getApiBaseUrl(): string {
 export function loadStoredSession(): LoginResponse | null {
   try {
     const raw = localStorage.getItem(SESSION_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as LoginResponse;
-    if (!parsed.token || !parsed.nsac_email) return null;
-    return parsed;
+    if (raw) {
+      const parsed = JSON.parse(raw) as LoginResponse;
+      if (parsed.token && parsed.nsac_email) return parsed;
+    }
+    const devSessionRaw = (import.meta.env.VITE_DEV_DEFAULT_SESSION as string | undefined)?.trim();
+    if (devSessionRaw) {
+      const parsed = JSON.parse(devSessionRaw) as LoginResponse;
+      if (parsed.token && parsed.nsac_email) {
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(parsed));
+        return parsed;
+      }
+    }
+    return null;
   } catch {
     return null;
   }
@@ -389,6 +398,35 @@ export async function fetchFichaList(
   });
 }
 
+export async function fetchBoletimPdf(
+  token: string,
+  year?: number
+): Promise<{ blob: Blob; filename: string }> {
+  const base = getApiBaseUrl();
+  const qs = year != null ? `?year=${encodeURIComponent(String(year))}` : '';
+  const res = await fetch(`${base}/api/v1/nsac/boletim/pdf${qs}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  const blob = await res.blob();
+  return {
+    blob,
+    filename: `boletim-n2sac-${year ?? 'atual'}.pdf`,
+  };
+}
+
+export async function createBoletimPdfLink(token: string, year?: number): Promise<string> {
+  const base = getApiBaseUrl();
+  const qs = year != null ? `?year=${encodeURIComponent(String(year))}` : '';
+  const res = await fetch(`${base}/api/v1/nsac/boletim/pdf-link${qs}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  const env = (await res.json()) as ApiSuccessEnvelope<{ url: string; expires_in_secs: number }>;
+  return `${base}${env.data.url}`;
+}
+
 export async function fetchAccountProfile(token: string): Promise<AccountProfileResponse> {
   const base = getApiBaseUrl();
   const res = await fetch(`${base}/api/v1/account`, {
@@ -444,6 +482,12 @@ export interface UserProfileData {
   banner_data_url: string | null;
   /** Active community-moderation restrictions (absent on older servers). */
   restrictions?: ModerationRestriction[];
+  /** Official full name cryptographically verified via Google (@unesp.br). */
+  verified_official_name?: string | null;
+  /** True when the institutional email looks abbreviated or has numeric suffixes. */
+  official_name_needs_verification?: boolean;
+  /** Server-configured Google OAuth Client ID for GSI. */
+  google_oauth_client_id?: string | null;
 }
 
 export type ReportKind = 'media' | 'text';
@@ -513,6 +557,35 @@ export async function fetchUserProfile(token: string): Promise<UserProfileData> 
     throw new NsacApiClientError(
       body?.error?.code ?? 'PROFILE_ERROR',
       body?.error?.message ?? 'Não foi possível carregar o perfil.',
+      res.status
+    );
+  }
+  saveCachedUserProfile(body.data);
+  return body.data;
+}
+
+export async function verifyGoogleOfficialName(
+  token: string,
+  idToken: string
+): Promise<UserProfileData> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/account/verify-google-name`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ id_token: idToken }),
+  });
+  const body = (await res.json()) as {
+    success?: boolean;
+    data?: UserProfileData;
+    error?: { code?: string; message?: string };
+  };
+  if (!res.ok || !body?.success || !body.data) {
+    throw new NsacApiClientError(
+      body?.error?.code ?? 'GOOGLE_VERIFY_ERROR',
+      body?.error?.message ?? 'Não foi possível confirmar o nome oficial com o Google.',
       res.status
     );
   }
@@ -1337,4 +1410,79 @@ export function subscribeClassroomStream(
     stopped = true;
     controller.abort();
   };
+}
+
+// ---------------------------------------------------------------------------
+// External Profile Connections (Discord, Spotify, GitHub, Steam, Social Links)
+// ---------------------------------------------------------------------------
+
+export async function fetchAccountConnections(
+  token: string
+): Promise<import('./types').AccountConnectionsPayload> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/account/connections`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  const env = (await res.json()) as ApiSuccessEnvelope<
+    import('./types').AccountConnectionsPayload
+  >;
+  return env.data;
+}
+
+export async function upsertAccountConnection(
+  token: string,
+  provider: string,
+  payload: { handle?: string; display_name?: string | null; is_visible?: boolean }
+): Promise<import('./types').AccountConnection> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/account/connections/${encodeURIComponent(provider)}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  const env = (await res.json()) as ApiSuccessEnvelope<import('./types').AccountConnection>;
+  return env.data;
+}
+
+export async function deleteAccountConnection(
+  token: string,
+  provider: string
+): Promise<void> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/account/connections/${encodeURIComponent(provider)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function startConnectionOAuth(
+  token: string,
+  provider: string,
+  platform: 'web' | 'android'
+): Promise<{ authorize_url: string; provider: string }> {
+  const base = getApiBaseUrl();
+  const res = await fetch(
+    `${base}/api/v1/account/connections/oauth/${encodeURIComponent(provider)}/start`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ platform }),
+    }
+  );
+  if (!res.ok) throw await parseErrorResponse(res);
+  const env = (await res.json()) as ApiSuccessEnvelope<{
+    authorize_url: string;
+    provider: string;
+  }>;
+  return env.data;
 }

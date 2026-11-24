@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/n2sac_logo_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash</item>
+        <item name="windowSplashScreenAnimationDuration">2000</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+        <item name="android:windowSplashScreenBackground">@color/n2sac_logo_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash</item>
+        <item name="android:windowSplashScreenAnimationDuration">2000</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarLaunch.Editorial" parent="AppTheme.NoActionBarLaunch">
+        <item name="windowSplashScreenBackground">@color/n2sac_editorial_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_editorial</item>
+        <item name="android:windowSplashScreenBackground">@color/n2sac_editorial_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_editorial</item>
+        <item name="android:windowSplashScreenAnimationDuration">2000</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarLaunch.Blue" parent="AppTheme.NoActionBarLaunch">
+        <item name="windowSplashScreenBackground">@color/n2sac_blue_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_blue</item>
+        <item name="android:windowSplashScreenBackground">@color/n2sac_blue_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_blue</item>
+        <item name="android:windowSplashScreenAnimationDuration">2000</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarLaunch.Green" parent="AppTheme.NoActionBarLaunch">
+        <item name="windowSplashScreenBackground">@color/n2sac_green_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_green</item>
+        <item name="android:windowSplashScreenBackground">@color/n2sac_green_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_green</item>
+        <item name="android:windowSplashScreenAnimationDuration">2000</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarLaunch.Purple" parent="AppTheme.NoActionBarLaunch">
+        <item name="windowSplashScreenBackground">@color/n2sac_purple_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_purple</item>
+        <item name="android:windowSplashScreenBackground">@color/n2sac_purple_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_purple</item>
+        <item name="android:windowSplashScreenAnimationDuration">2000</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarLaunch.Teal" parent="AppTheme.NoActionBarLaunch">
+        <item name="windowSplashScreenBackground">@color/n2sac_teal_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_teal</item>
+        <item name="android:windowSplashScreenBackground">@color/n2sac_teal_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_teal</item>
+        <item name="android:windowSplashScreenAnimationDuration">2000</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarLaunch.Amber" parent="AppTheme.NoActionBarLaunch">
+        <item name="windowSplashScreenBackground">@color/n2sac_amber_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_amber</item>
+        <item name="android:windowSplashScreenBackground">@color/n2sac_amber_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_amber</item>
+        <item name="android:windowSplashScreenAnimationDuration">2000</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarLaunch.Coral" parent="AppTheme.NoActionBarLaunch">
+        <item name="windowSplashScreenBackground">@color/n2sac_coral_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_coral</item>
+        <item name="android:windowSplashScreenBackground">@color/n2sac_coral_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_coral</item>
+        <item name="android:windowSplashScreenAnimationDuration">2000</item>
+    </style>
+
+    <style name="AppTheme.NoActionBarLaunch.Rose" parent="AppTheme.NoActionBarLaunch">
+        <item name="windowSplashScreenBackground">@color/n2sac_rose_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_rose</item>
+        <item name="android:windowSplashScreenBackground">@color/n2sac_rose_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/avd_n2sac_splash_rose</item>
+        <item name="android:windowSplashScreenAnimationDuration">2000</item>
+    </style>
+</resources>

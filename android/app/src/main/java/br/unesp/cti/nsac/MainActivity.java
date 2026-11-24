@@ -1,10 +1,16 @@
-package br.unesp.cti.nsac.aperture;
+package br.unesp.cti.nsac;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.media.AudioAttributes;
 import android.media.RingtoneManager;
@@ -16,6 +22,7 @@ import android.webkit.JavascriptInterface;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
+import android.view.animation.AccelerateInterpolator;
 import android.webkit.WebView;
 import androidx.activity.BackEventCompat;
 import androidx.activity.OnBackPressedCallback;
@@ -23,6 +30,7 @@ import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsAnimationCompat;
@@ -49,11 +57,167 @@ public class MainActivity extends BridgeActivity {
     /** Pending notification tap payload JSON captured on cold/warm start until WebView consumes it. */
     private volatile String pendingPushIntentJson = null;
 
+    private volatile boolean webAppReady = false;
+    private static final long SPLASH_MAX_WAIT_MS = 4500L;
+    private static final long SPLASH_EXPLODE_MS = 200L;
+    private static final long SPLASH_FADE_MS = 50L;
+
+    /**
+     * Native shockwave + 24 radial sparks overlay matching the /inicio hero explosion,
+     * tuned slightly faster for the Android splash exit.
+     */
+    private static final class SplashExplosionView extends View {
+        private final android.graphics.Paint ringPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final android.graphics.Paint sparkPaint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final float[] angles = new float[24];
+        private final float[] dists = new float[24];
+        private final float[] sizes = new float[24];
+        private final float[] rotSpeeds = new float[24];
+        private final int[] colors;
+        private float progress = 0f;
+
+        SplashExplosionView(android.content.Context ctx) {
+            super(ctx);
+            float dp = ctx.getResources().getDisplayMetrics().density;
+            colors = new int[] {
+                0xFFFF6B6B, // danger coral
+                0xFFFBBF24, // amber spark
+                0xFF60A5FA, // blue
+                0xFFA78BFA, // purple
+                0xFF34D399  // emerald
+            };
+            ringPaint.setStyle(android.graphics.Paint.Style.STROKE);
+            ringPaint.setColor(0xFFFF6B6B);
+            sparkPaint.setStyle(android.graphics.Paint.Style.FILL);
+            java.util.Random rng = new java.util.Random(42L);
+            for (int i = 0; i < 24; i++) {
+                angles[i] = (float) ((Math.PI * 2.0 * i) / 24.0 + (rng.nextFloat() - 0.5f) * 0.25f);
+                dists[i] = (110f + rng.nextFloat() * 125f) * dp;
+                sizes[i] = (6f + rng.nextFloat() * 9f) * dp;
+                rotSpeeds[i] = rng.nextFloat() * 360f;
+            }
+        }
+
+        void setProgress(float p) {
+            this.progress = p;
+            invalidate();
+        }
+
+        @Override
+        protected void onDraw(android.graphics.Canvas canvas) {
+            super.onDraw(canvas);
+            float cx = getWidth() * 0.5f;
+            float cy = getHeight() * 0.5f;
+            float dp = getResources().getDisplayMetrics().density;
+
+            // Ease-out cubic (matches cubic-bezier(0.16, 1, 0.3, 1))
+            float ease = 1f - (float) Math.pow(1f - progress, 3.0);
+
+            // 1. Expanding shockwave ring
+            float ringRadius = (24f + ease * 195f) * dp;
+            ringPaint.setStrokeWidth(Math.max(1f, (8f * (1f - ease)) * dp));
+            ringPaint.setAlpha((int) (240 * Math.max(0f, 1f - progress)));
+            canvas.drawCircle(cx, cy, ringRadius, ringPaint);
+
+            // 2. 24 radial sparks (alternating circles & rotated squares)
+            float alpha = Math.max(0f, 1f - progress);
+            float scale = 1.2f - 1.1f * ease;
+            for (int i = 0; i < 24; i++) {
+                float px = cx + (float) Math.cos(angles[i]) * dists[i] * ease;
+                float py = cy + (float) Math.sin(angles[i]) * dists[i] * ease;
+                float r = sizes[i] * 0.5f * scale;
+                sparkPaint.setColor(colors[i % colors.length]);
+                sparkPaint.setAlpha((int) (255 * alpha));
+                if (i % 2 == 0) {
+                    canvas.drawCircle(px, py, r, sparkPaint);
+                } else {
+                    canvas.save();
+                    canvas.translate(px, py);
+                    canvas.rotate(rotSpeeds[i] * ease);
+                    canvas.drawRoundRect(-r, -r, r, r, 2f * dp, 2f * dp, sparkPaint);
+                    canvas.restore();
+                }
+            }
+        }
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        final long onCreateMs = android.os.SystemClock.uptimeMillis();
+        SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
+        splashScreen.setKeepOnScreenCondition(() ->
+            !webAppReady && (android.os.SystemClock.uptimeMillis() - onCreateMs) < SPLASH_MAX_WAIT_MS
+        );
+        splashScreen.setOnExitAnimationListener(splashViewProvider -> {
+            View splashView = splashViewProvider.getView();
+            View iconView = splashViewProvider.getIconView();
+
+            android.animation.AnimatorSet exitSeq = new android.animation.AnimatorSet();
+            ObjectAnimator fadeOut = ObjectAnimator.ofFloat(splashView, View.ALPHA, 1f, 0f);
+            fadeOut.setDuration(SPLASH_FADE_MS);
+            fadeOut.setInterpolator(new AccelerateInterpolator());
+
+            if (iconView != null) {
+                android.animation.AnimatorSet explodeSet = new android.animation.AnimatorSet();
+                java.util.ArrayList<Animator> anims = new java.util.ArrayList<>();
+
+                // Shockwave + 24 radial sparks overlay on the splash container
+                if (splashView instanceof android.view.ViewGroup) {
+                    SplashExplosionView fx = new SplashExplosionView(this);
+                    ((android.view.ViewGroup) splashView).addView(
+                        fx,
+                        new android.view.ViewGroup.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                    );
+                    android.animation.ValueAnimator fxAnim = android.animation.ValueAnimator.ofFloat(0f, 1f);
+                    fxAnim.setDuration(SPLASH_EXPLODE_MS);
+                    fxAnim.addUpdateListener(a -> fx.setProgress((float) a.getAnimatedValue()));
+                    anims.add(fxAnim);
+                }
+
+                // Recoil shake (like /inicio stageShake) + explosive pop + viscous spin brake
+                float dp = getResources().getDisplayMetrics().density;
+                ObjectAnimator shakeX = ObjectAnimator.ofFloat(iconView, View.TRANSLATION_X, 0f, -6f * dp, 7f * dp, -5f * dp, 4f * dp, 0f);
+                ObjectAnimator shakeY = ObjectAnimator.ofFloat(iconView, View.TRANSLATION_Y, 0f, 3f * dp, -3f * dp, 2f * dp, -2f * dp, 0f);
+                ObjectAnimator sx = ObjectAnimator.ofFloat(iconView, View.SCALE_X, 1f, 1.32f, 0.94f, 1f);
+                ObjectAnimator sy = ObjectAnimator.ofFloat(iconView, View.SCALE_Y, 1f, 1.32f, 0.94f, 1f);
+                ObjectAnimator rot = ObjectAnimator.ofFloat(iconView, View.ROTATION, iconView.getRotation(), iconView.getRotation() + 360f);
+
+                shakeX.setDuration(160L);
+                shakeY.setDuration(160L);
+                sx.setDuration(SPLASH_EXPLODE_MS);
+                sy.setDuration(SPLASH_EXPLODE_MS);
+                rot.setDuration(SPLASH_EXPLODE_MS);
+                sx.setInterpolator(new android.view.animation.DecelerateInterpolator(2.2f));
+                sy.setInterpolator(new android.view.animation.DecelerateInterpolator(2.2f));
+                rot.setInterpolator(new android.view.animation.DecelerateInterpolator(3.0f));
+
+                anims.add(shakeX);
+                anims.add(shakeY);
+                anims.add(sx);
+                anims.add(sy);
+                anims.add(rot);
+
+                explodeSet.playTogether(anims);
+                exitSeq.playSequentially(explodeSet, fadeOut);
+            } else {
+                exitSeq.play(fadeOut);
+            }
+
+            exitSeq.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    splashViewProvider.remove();
+                }
+            });
+            exitSeq.start();
+        });
         super.onCreate(savedInstanceState);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
         ensureHighPriorityNotificationChannels();
+        attachSplashBridge();
         attachPredictiveBackBridge();
         attachThemeBridge();
         attachApkUpdaterBridge();
@@ -168,9 +332,29 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
+    public void onStop() {
+        super.onStop();
+        // Apply any queued launcher icon alias swap ONLY when leaving/closing the app,
+        // so changing the theme inside the app never kills or closes the live task!
+        applyPendingLauncherAlias();
+    }
+
+    @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         syncAospDynamicColorsToWebView();
+    }
+
+    private void attachSplashBridge() {
+        if (this.bridge == null) return;
+        WebView webView = this.bridge.getWebView();
+        if (webView == null) return;
+        webView.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public void onAppReady() {
+                webAppReady = true;
+            }
+        }, "NsacAndroidSplash");
     }
 
     private void attachPredictiveBackBridge() {
@@ -317,6 +501,112 @@ public class MainActivity extends BridgeActivity {
         webView.evaluateJavascript(js, null);
     }
 
+    private static final String LAUNCHER_PREFS = "n2sac_launcher_prefs";
+    private static final String LAUNCHER_PREF_KEY = "active_alias_key";
+    private static final String LAUNCHER_PENDING_KEY = "pending_alias_key";
+    private static final String[][] LAUNCHER_ALIASES = new String[][] {
+        { "system",    "br.unesp.cti.nsac.LauncherSystem" },
+        { "editorial", "br.unesp.cti.nsac.LauncherEditorial" },
+        { "blue",      "br.unesp.cti.nsac.LauncherBlue" },
+        { "green",     "br.unesp.cti.nsac.LauncherGreen" },
+        { "purple",    "br.unesp.cti.nsac.LauncherPurple" },
+        { "teal",      "br.unesp.cti.nsac.LauncherTeal" },
+        { "amber",     "br.unesp.cti.nsac.LauncherAmber" },
+        { "coral",     "br.unesp.cti.nsac.LauncherCoral" },
+        { "rose",      "br.unesp.cti.nsac.LauncherRose" },
+    };
+
+    private String normalizeThemeKey(String rawKey) {
+        if (rawKey != null) {
+            String normalized = rawKey.trim().toLowerCase(java.util.Locale.ROOT);
+            for (String[] entry : LAUNCHER_ALIASES) {
+                if (entry[0].equals(normalized)) {
+                    return entry[0];
+                }
+            }
+        }
+        return "system";
+    }
+
+    private int resolveSplashStyleRes(String key) {
+        switch (key) {
+            case "editorial": return R.style.AppTheme_NoActionBarLaunch_Editorial;
+            case "blue":      return R.style.AppTheme_NoActionBarLaunch_Blue;
+            case "green":     return R.style.AppTheme_NoActionBarLaunch_Green;
+            case "purple":    return R.style.AppTheme_NoActionBarLaunch_Purple;
+            case "teal":      return R.style.AppTheme_NoActionBarLaunch_Teal;
+            case "amber":     return R.style.AppTheme_NoActionBarLaunch_Amber;
+            case "coral":     return R.style.AppTheme_NoActionBarLaunch_Coral;
+            case "rose":      return R.style.AppTheme_NoActionBarLaunch_Rose;
+            case "system":
+            default:
+                return android.content.res.Resources.ID_NULL;
+        }
+    }
+
+    private void scheduleAppThemeIconAndSplash(String rawKey) {
+        String targetKey = normalizeThemeKey(rawKey);
+
+        // 1. Official Android 12+ API: immediately persist the SplashScreen theme in system_server
+        //    (zero restart, zero kill; takes effect on the very next cold start, following system Day/Night!).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                getSplashScreen().setSplashScreenTheme(resolveSplashStyleRes(targetKey));
+            } catch (Exception ignored) {
+                // ignore if splash screen service is unavailable
+            }
+        }
+
+        // 2. Queue the launcher icon <activity-alias> swap for onStop() so we NEVER kill the app mid-session.
+        SharedPreferences prefs = getSharedPreferences(LAUNCHER_PREFS, MODE_PRIVATE);
+        String currentKey = prefs.getString(LAUNCHER_PREF_KEY, "system");
+        if (targetKey.equals(currentKey)) {
+            prefs.edit().remove(LAUNCHER_PENDING_KEY).apply();
+        } else {
+            prefs.edit().putString(LAUNCHER_PENDING_KEY, targetKey).apply();
+        }
+    }
+
+    private void applyPendingLauncherAlias() {
+        SharedPreferences prefs = getSharedPreferences(LAUNCHER_PREFS, MODE_PRIVATE);
+        String targetKey = prefs.getString(LAUNCHER_PENDING_KEY, null);
+        if (targetKey == null) return;
+        String currentKey = prefs.getString(LAUNCHER_PREF_KEY, "system");
+        if (targetKey.equals(currentKey)) {
+            prefs.edit().remove(LAUNCHER_PENDING_KEY).apply();
+            return;
+        }
+
+        String targetClass = LAUNCHER_ALIASES[0][1];
+        for (String[] entry : LAUNCHER_ALIASES) {
+            if (entry[0].equals(targetKey)) {
+                targetClass = entry[1];
+                break;
+            }
+        }
+
+        PackageManager pm = getPackageManager();
+        String pkg = getPackageName();
+        pm.setComponentEnabledSetting(
+            new ComponentName(pkg, targetClass),
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+            PackageManager.DONT_KILL_APP
+        );
+        for (String[] entry : LAUNCHER_ALIASES) {
+            if (!entry[0].equals(targetKey)) {
+                pm.setComponentEnabledSetting(
+                    new ComponentName(pkg, entry[1]),
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP
+                );
+            }
+        }
+        prefs.edit()
+            .putString(LAUNCHER_PREF_KEY, targetKey)
+            .remove(LAUNCHER_PENDING_KEY)
+            .apply();
+    }
+
     private void attachThemeBridge() {
         if (this.bridge == null) return;
         WebView webView = this.bridge.getWebView();
@@ -332,6 +622,11 @@ public class MainActivity extends BridgeActivity {
                         controller.setAppearanceLightNavigationBars(isLight);
                     }
                 });
+            }
+
+            @JavascriptInterface
+            public void setAppThemeIcon(final String themeKey) {
+                runOnUiThread(() -> scheduleAppThemeIconAndSplash(themeKey));
             }
         }, "NsacAndroidTheme");
     }
@@ -366,6 +661,75 @@ public class MainActivity extends BridgeActivity {
                     }
                 });
                 return true;
+            }
+
+            /**
+             * Writes a base64-encoded PDF into the app cache directory and opens the native
+             * Android Share Sheet (`ACTION_SEND` + `FileProvider`) so the user can share the
+             * PDF directly to WhatsApp, Drive, Gmail, etc.
+             */
+            @JavascriptInterface
+            public boolean sharePdfBase64(
+                final String base64Pdf,
+                final String rawFilename,
+                final String title,
+                final String text
+            ) {
+                if (base64Pdf == null || base64Pdf.isEmpty()) return false;
+                try {
+                    final byte[] pdfBytes = android.util.Base64.decode(base64Pdf, android.util.Base64.DEFAULT);
+                    if (pdfBytes == null || pdfBytes.length == 0) return false;
+
+                    String safeName = (rawFilename == null ? "" : rawFilename)
+                        .replaceAll("[^a-zA-Z0-9._-]", "_");
+                    if (safeName.isEmpty() || safeName.startsWith(".")) {
+                        safeName = "boletim-n2sac.pdf";
+                    }
+                    if (!safeName.toLowerCase(java.util.Locale.ROOT).endsWith(".pdf")) {
+                        safeName = safeName + ".pdf";
+                    }
+
+                    File dir = new File(getCacheDir(), "shared_pdfs");
+                    if (!dir.exists() && !dir.mkdirs()) return false;
+                    File outFile = new File(dir, safeName);
+                    try (FileOutputStream fos = new FileOutputStream(outFile)) {
+                        fos.write(pdfBytes);
+                        fos.flush();
+                    }
+
+                    final Uri contentUri = FileProvider.getUriForFile(
+                        MainActivity.this,
+                        getPackageName() + ".fileprovider",
+                        outFile
+                    );
+                    final String finalName = safeName;
+                    runOnUiThread(() -> {
+                        try {
+                            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                            shareIntent.setType("application/pdf");
+                            shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                            if (title != null && !title.isEmpty()) {
+                                shareIntent.putExtra(Intent.EXTRA_SUBJECT, title);
+                            }
+                            if (text != null && !text.isEmpty()) {
+                                shareIntent.putExtra(Intent.EXTRA_TEXT, text);
+                            }
+                            shareIntent.setClipData(android.content.ClipData.newRawUri(finalName, contentUri));
+                            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            Intent chooser = Intent.createChooser(
+                                shareIntent,
+                                (title != null && !title.isEmpty()) ? title : "Compartilhar Boletim"
+                            );
+                            chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            startActivity(chooser);
+                        } catch (Exception ignored) {
+                            // No share target available.
+                        }
+                    });
+                    return true;
+                } catch (Exception e) {
+                    return false;
+                }
             }
         }, "NsacAndroidOpen");
     }

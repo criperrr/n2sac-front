@@ -1,0 +1,1851 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" id="meta-theme-color" content="#111318" />
+    <meta
+      name="description"
+      content="n²sac — O aplicativo estudantil do Colégio Técnico Industrial (CTI — UNESP Bauru). Boletim com projeção de aprovação, alertas de novas notas, fichas e frequência, canal da turma e ranking."
+    />
+    <meta property="og:title" content="n²sac • O portal do CTI, reinventado." />
+    <meta property="og:description" content="Boletim inteligente, avisos instantâneos de novas notas, canal da turma, fichas de avaliação, ranking com modo anônimo e temas dinâmicos para TI, Mecânica e Eletrônica." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://notebook-server.tailddd6bf.ts.net/inicio" />
+    <meta property="og:image" content="https://notebook-server.tailddd6bf.ts.net/logo-oauth.png" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <title>n²sac • O aplicativo dos estudantes do CTI UNESP Bauru</title>
+    <style>
+      :root {
+        --bg: #111318;
+        --surface: #181b22;
+        --surface-high: #21252f;
+        --surface-glass: rgba(24, 27, 34, 0.76);
+        --border: rgba(255, 255, 255, 0.09);
+        --border-strong: rgba(255, 255, 255, 0.16);
+        --text: #e6e8f0;
+        --muted: #9aa2b4;
+        --primary: #adc6ff;
+        --on-primary: #0f254f;
+        --primary-container: rgba(173, 198, 255, 0.14);
+        --secondary: #bfc6dc;
+        --tertiary: #debcdf;
+        --logo-seal: #adc6ff;
+        --logo-orb1: #debcdf;
+        --logo-orb2: #bfc6dc;
+        --logo-text: #e6e8f0;
+        --logo-blend: screen;
+        --glow-1: rgba(173, 198, 255, 0.22);
+        --glow-2: rgba(222, 188, 223, 0.16);
+        --danger: #ff6b6b;
+        --shadow-xl: 0 30px 90px -20px rgba(0, 0, 0, 0.62);
+        --radius-xl: 34px;
+        --radius-lg: 26px;
+        --radius-md: 18px;
+        --spring: cubic-bezier(0.22, 1, 0.36, 1);
+        --spring-bouncy: cubic-bezier(0.34, 1.46, 0.64, 1);
+      }
+
+      /* Circular View Transition Theme Expansion */
+      ::view-transition-old(root),
+      ::view-transition-new(root) {
+        animation: none;
+        mix-blend-mode: normal;
+      }
+      ::view-transition-old(root) { z-index: 1; }
+      ::view-transition-new(root) { z-index: 9999; clip-path: circle(0px at var(--vt-x, 50%) var(--vt-y, 50%)); }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.62;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Ambient Monet Mesh Background (pure soft radial gradients — zero CPU blur filter) */
+      .mesh-bg {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+      .mesh-orb {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0.72;
+      }
+      .mesh-orb--1 {
+        width: 720px; height: 720px; top: -240px; left: -200px;
+        background: radial-gradient(circle, var(--glow-1) 0%, transparent 66%);
+      }
+      .mesh-orb--2 {
+        width: 780px; height: 780px; top: 15%; right: -260px;
+        background: radial-gradient(circle, var(--glow-2) 0%, transparent 66%);
+      }
+      .mesh-orb--3 {
+        width: 640px; height: 640px; bottom: -220px; left: 22%;
+        background: radial-gradient(circle, var(--glow-1) 0%, transparent 68%);
+        opacity: 0.48;
+      }
+
+      /* Floating Glass Pill Navbar */
+      .nav-wrap {
+        position: sticky;
+        top: 14px;
+        z-index: 60;
+        display: flex;
+        justify-content: center;
+        padding: 0 16px;
+        pointer-events: none;
+      }
+      .navbar {
+        pointer-events: auto;
+        width: 100%;
+        max-width: 1120px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 8px 12px 8px 14px;
+        border-radius: 999px;
+        background: var(--surface-glass);
+        backdrop-filter: blur(22px) saturate(160%);
+        -webkit-backdrop-filter: blur(22px) saturate(160%);
+        border: 1px solid var(--border-strong);
+        box-shadow: 0 14px 40px -12px rgba(0, 0, 0, 0.35);
+      }
+      .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: var(--text);
+        font-family: 'Outfit', sans-serif;
+        font-weight: 800;
+        font-size: 1.18rem;
+        letter-spacing: -0.02em;
+      }
+      .nav-brand svg { width: 34px; height: 34px; display: block; flex-shrink: 0; }
+      .nav-links { display: flex; align-items: center; gap: 4px; }
+      .nav-links a {
+        text-decoration: none;
+        color: var(--muted);
+        font-size: 0.86rem;
+        font-weight: 600;
+        padding: 7px 12px;
+        border-radius: 999px;
+        transition: color 0.2s, background 0.2s;
+      }
+      .nav-links a:hover { color: var(--text); background: var(--primary-container); }
+      .nav-right { display: flex; align-items: center; gap: 8px; }
+      .monet-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: var(--surface-high);
+        border: 1px solid var(--border);
+      }
+      .swatch-btn {
+        width: 19px; height: 19px; border-radius: 50%;
+        border: 2px solid transparent; cursor: pointer; padding: 0;
+        transition: transform 0.28s var(--spring-bouncy), border-color 0.2s;
+      }
+      .swatch-btn:hover { transform: scale(1.26); }
+      .swatch-btn.active { border-color: var(--text); transform: scale(1.2); }
+      .mode-btn {
+        width: 34px; height: 34px; border-radius: 50%;
+        border: 1px solid var(--border); background: var(--surface-high); color: var(--text);
+        display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+        transition: transform 0.28s var(--spring-bouncy);
+      }
+      .mode-btn:hover { transform: rotate(18deg) scale(1.08); }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+        padding: 12px 22px; border-radius: 999px; text-decoration: none;
+        font-size: 0.92rem; font-weight: 700; border: 1px solid transparent; cursor: pointer;
+        transition: transform 0.3s var(--spring-bouncy), box-shadow 0.25s ease, background 0.25s ease;
+        white-space: nowrap;
+      }
+      .btn:hover { transform: translateY(-2px) scale(1.03); }
+      .btn:active { transform: scale(0.96); }
+      .btn-primary {
+        background: var(--primary);
+        color: var(--on-primary);
+        box-shadow: 0 12px 30px -8px var(--glow-1);
+      }
+      .btn-secondary {
+        background: var(--surface-high);
+        color: var(--text);
+        border-color: var(--border-strong);
+      }
+      .btn-sm { padding: 8px 16px; font-size: 0.84rem; }
+
+      /* Main Layout */
+      main {
+        position: relative;
+        z-index: 2;
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 36px 20px 80px;
+        display: flex;
+        flex-direction: column;
+        gap: 72px;
+      }
+
+      /* Hero */
+      .hero {
+        display: grid;
+        grid-template-columns: 1.12fr 0.88fr;
+        align-items: center;
+        gap: 44px;
+        padding-top: 12px;
+      }
+      .eyebrow {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 6px 14px; border-radius: 999px;
+        background: var(--primary-container); border: 1px solid var(--border-strong);
+        color: var(--primary); font-size: 0.8rem; font-weight: 700; margin-bottom: 18px;
+      }
+      .pulse-dot {
+        width: 8px; height: 8px; border-radius: 50%; background: var(--primary);
+        animation: pulseDot 2s infinite;
+      }
+      @keyframes pulseDot {
+        0% { box-shadow: 0 0 0 0 var(--glow-1); }
+        70% { box-shadow: 0 0 0 10px transparent; }
+        100% { box-shadow: 0 0 0 0 transparent; }
+      }
+      .hero h1 {
+        margin: 0 0 18px;
+        font-family: 'Outfit', sans-serif;
+        font-size: clamp(2.45rem, 5.2vw, 4.15rem);
+        font-weight: 900;
+        line-height: 1.03;
+        letter-spacing: -0.035em;
+      }
+      .hero h1 .accent {
+        background: linear-gradient(125deg, var(--primary) 10%, var(--tertiary) 88%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .hero-sub {
+        margin: 0 0 26px; color: var(--muted); font-size: 1.05rem; max-width: 540px;
+      }
+      .hero-ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+      .trust-strip { display: flex; flex-wrap: wrap; gap: 8px; }
+      .trust-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 12px; border-radius: 12px;
+        background: var(--surface); border: 1px solid var(--border);
+        font-size: 0.78rem; font-weight: 600; color: var(--muted);
+      }
+
+      /* Interactive Spin-to-Explode Hero Logo Stage */
+      .hero-stage {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 26px 24px 22px;
+        border-radius: var(--radius-xl);
+        background: linear-gradient(160deg, var(--surface) 0%, var(--surface-high) 100%);
+        border: 1px solid var(--border-strong);
+        box-shadow: var(--shadow-xl);
+        overflow: hidden;
+        transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      }
+      .hero-stage.overheating {
+        border-color: var(--danger);
+        box-shadow: 0 0 55px -10px rgba(255, 107, 107, 0.55);
+      }
+      .hero-stage.exploded {
+        animation: stageShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+      }
+      @keyframes stageShake {
+        10%, 90% { transform: translate3d(-3px, 2px, 0); }
+        20%, 80% { transform: translate3d(5px, -3px, 0); }
+        30%, 50%, 70% { transform: translate3d(-7px, 3px, 0); }
+        40%, 60% { transform: translate3d(7px, -2px, 0); }
+      }
+      .hero-stage::before {
+        content: '';
+        position: absolute;
+        inset: -30%;
+        background: radial-gradient(circle at 50% 45%, var(--glow-1), transparent 58%);
+        pointer-events: none;
+      }
+      .logo-hitbox {
+        position: relative;
+        width: min(310px, 70vw);
+        height: min(310px, 70vw);
+        cursor: grab;
+        user-select: none;
+        touch-action: none;
+        display: grid;
+        place-items: center;
+      }
+      .logo-hitbox:active { cursor: grabbing; }
+      .hero-logo-svg {
+        width: 100%; height: 100%; display: block;
+        transform-origin: center center;
+      }
+      .spark-layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: visible;
+        z-index: 6;
+      }
+      .shockwave {
+        position: absolute;
+        left: 50%; top: 50%;
+        width: 40px; height: 40px;
+        margin: -20px 0 0 -20px;
+        border-radius: 50%;
+        border: 4px solid var(--danger);
+        opacity: 0;
+        pointer-events: none;
+      }
+      .shockwave.boom {
+        animation: shockBoom 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      @keyframes shockBoom {
+        0% { transform: scale(1); opacity: 0.95; border-width: 8px; }
+        100% { transform: scale(11); opacity: 0; border-width: 1px; }
+      }
+      .spin-hud {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        max-width: 280px;
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: center;
+      }
+      .rpm-bar-track {
+        width: 100%;
+        height: 7px;
+        border-radius: 999px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        overflow: hidden;
+      }
+      .rpm-bar-fill {
+        height: 100%;
+        width: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--primary), var(--tertiary), #ff6b6b);
+        transform-origin: left center;
+        transform: scaleX(0);
+      }
+      .spin-caption {
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: var(--muted);
+        text-align: center;
+        height: 22px;
+        line-height: 22px;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      .spin-caption.hot { color: var(--danger); font-weight: 700; }
+
+      /* =====================================================================
+         AOSP GEOMETRIC SHAPE MORPH MARQUEE SEPARATOR (copied from ShapeMorph)
+         ===================================================================== */
+      .aosp-sep-bleed {
+        position: relative;
+        width: 100vw;
+        left: 50%;
+        margin-left: -50vw;
+        overflow: hidden;
+        padding: 10px 0;
+        background: linear-gradient(90deg, transparent 0%, var(--primary-container) 50%, transparent 100%);
+        mask-image: linear-gradient(90deg, transparent 0%, #000 6%, #000 94%, transparent 100%);
+        -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 6%, #000 94%, transparent 100%);
+      }
+      .aosp-sep-bleed::before,
+      .aosp-sep-bleed::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: var(--border);
+        opacity: 0.55;
+        transform: scaleY(0.5);
+        pointer-events: none;
+      }
+      .aosp-sep-bleed::before { top: 0; transform-origin: top; }
+      .aosp-sep-bleed::after { bottom: 0; transform-origin: bottom; }
+      .aosp-sep-entry {
+        opacity: 0;
+        transition: opacity 0.35s ease;
+      }
+      .aosp-sep-entry.entered {
+        opacity: 1;
+      }
+      .aosp-marquee-track {
+        display: flex;
+        align-items: center;
+        width: max-content;
+        will-change: transform;
+      }
+      .aosp-shape-item {
+        flex-shrink: 0;
+        width: 64px;
+        height: 64px;
+        margin: 0 3px;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        transition: opacity 0.28s var(--spring), transform 0.36s var(--spring-bouncy), filter 0.28s ease;
+        position: relative;
+      }
+      .aosp-shape-item svg {
+        width: 52px;
+        height: 52px;
+        display: block;
+        overflow: visible;
+      }
+      .aosp-sep-bleed.is-hovering .aosp-shape-item {
+        opacity: 0.24;
+        transform: scale(0.86);
+      }
+      .aosp-sep-bleed.is-hovering .aosp-shape-item.is-focused {
+        opacity: 1;
+        transform: scale(1.52);
+        z-index: 4;
+        filter: drop-shadow(0 12px 22px var(--glow-1));
+      }
+
+      /* Metrics Strip */
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+      }
+      .metric-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 22px 20px;
+        transition: transform 0.35s var(--spring-bouncy), border-color 0.25s;
+      }
+      .metric-card:hover { transform: translateY(-5px) scale(1.02); border-color: var(--primary); }
+      .metric-val {
+        font-family: 'Outfit', sans-serif;
+        font-size: 2.05rem;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        color: var(--primary);
+        line-height: 1.1;
+      }
+      .metric-lbl { margin-top: 7px; font-size: 0.85rem; color: var(--muted); }
+
+      /* Section Header */
+      .sec-head {
+        display: flex; flex-direction: column; gap: 8px;
+        max-width: 700px; margin-bottom: 28px;
+      }
+      .sec-tag {
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.8rem; font-weight: 800; text-transform: uppercase;
+        letter-spacing: 0.09em; color: var(--primary);
+      }
+      .sec-head h2 {
+        margin: 0; font-family: 'Outfit', sans-serif;
+        font-size: clamp(1.75rem, 3.4vw, 2.55rem);
+        font-weight: 800; line-height: 1.12; letter-spacing: -0.025em;
+      }
+      .sec-head p { margin: 0; color: var(--muted); font-size: 0.98rem; }
+
+      /* Real App Showcase with Real Screenshots (compact to fit single viewport) */
+      .showcase {
+        display: grid;
+        grid-template-columns: 1fr 268px;
+        gap: 26px;
+        align-items: center;
+        background: var(--surface);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-xl);
+        padding: 22px 26px;
+        box-shadow: var(--shadow-xl);
+      }
+      .tab-list { display: flex; flex-direction: column; gap: 8px; }
+      .demo-tab {
+        text-align: left; background: transparent;
+        border: 1px solid var(--border); border-radius: var(--radius-md);
+        padding: 12px 15px; cursor: pointer; color: var(--text);
+        transition: background 0.25s, border-color 0.25s, transform 0.3s var(--spring-bouncy);
+      }
+      .demo-tab:hover { background: var(--surface-high); transform: translateX(5px); }
+      .demo-tab.active {
+        background: var(--primary-container);
+        border-color: var(--primary);
+        transform: translateX(4px);
+      }
+      .demo-tab h3 {
+        margin: 0 0 3px; font-family: 'Outfit', sans-serif; font-size: 0.98rem; font-weight: 700;
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      }
+      .demo-tab p { margin: 0; font-size: 0.82rem; color: var(--muted); line-height: 1.48; }
+      .tab-badge {
+        padding: 2px 9px; border-radius: 999px;
+        font-size: 0.72rem; font-weight: 700;
+        background: var(--primary-container); color: var(--primary);
+        border: 1px solid var(--border-strong);
+      }
+
+      /* Real Pixel Phone Frame */
+      .phone-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .phone-frame {
+        height: min(490px, 64vh);
+        width: auto;
+        aspect-ratio: 390 / 844;
+        border-radius: 32px;
+        background: var(--bg);
+        border: 6px solid var(--surface-high);
+        box-shadow: 0 26px 56px -16px rgba(0, 0, 0, 0.35), inset 0 0 0 1px var(--border-strong);
+        overflow: hidden;
+        position: relative;
+      }
+      .phone-shot {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+        transition: opacity 0.28s ease, transform 0.36s var(--spring);
+      }
+      .phone-shot.swapping {
+        opacity: 0.25;
+        transform: scale(0.97);
+      }
+      .phone-theme-caption {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--muted);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        background: var(--surface-high);
+        border: 1px solid var(--border);
+      }
+
+      /* Theme Gallery — Real App Screenshot per Theme */
+      .theme-gallery {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 14px;
+      }
+      .theme-card {
+        background: var(--surface);
+        border: 2px solid var(--border);
+        border-radius: 22px;
+        padding: 10px;
+        cursor: pointer;
+        text-align: center;
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: transform 0.34s var(--spring-bouncy), border-color 0.25s, box-shadow 0.3s;
+      }
+      .theme-card:hover {
+        transform: translateY(-6px) scale(1.03);
+        border-color: var(--primary);
+      }
+      .theme-card.active {
+        border-color: var(--primary);
+        box-shadow: 0 18px 36px -14px var(--glow-1);
+        transform: translateY(-4px);
+      }
+      .theme-card img {
+        width: 100%;
+        aspect-ratio: 390 / 680;
+        object-fit: cover;
+        object-position: top;
+        border-radius: 14px;
+        display: block;
+      }
+      .theme-card-title {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 0.82rem;
+        line-height: 1.2;
+      }
+      .theme-card-sub {
+        font-size: 0.72rem;
+        color: var(--muted);
+        line-height: 1.15;
+      }
+
+      /* Bento Grid */
+      .bento {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .bento-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        display: flex; flex-direction: column; gap: 10px;
+        transition: transform 0.34s var(--spring-bouncy), border-color 0.25s, box-shadow 0.3s;
+      }
+      .bento-card:hover {
+        transform: translateY(-6px) scale(1.015);
+        border-color: var(--primary);
+        box-shadow: 0 22px 45px -18px rgba(0, 0, 0, 0.38);
+      }
+      .bento-card.span-2 { grid-column: span 2; }
+      .bento-ico {
+        width: 46px; height: 46px; border-radius: 16px;
+        background: var(--primary-container); color: var(--primary);
+        display: inline-flex; align-items: center; justify-content: center; margin-bottom: 4px;
+      }
+      .bento-card h3 { margin: 0; font-family: 'Outfit', sans-serif; font-size: 1.18rem; font-weight: 700; }
+      .bento-card p { margin: 0; color: var(--muted); font-size: 0.91rem; }
+
+      /* Human-Friendly Privacy Card */
+      .security-box {
+        background: linear-gradient(135deg, var(--surface) 0%, var(--surface-high) 100%);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-xl);
+        padding: 34px;
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 28px;
+        align-items: center;
+      }
+      .sec-list {
+        list-style: none; padding: 0; margin: 16px 0 0;
+        display: flex; flex-direction: column; gap: 11px;
+      }
+      .sec-list li {
+        display: flex; align-items: flex-start; gap: 10px;
+        font-size: 0.92rem; color: var(--muted);
+      }
+      .sec-list strong { color: var(--text); }
+      .check-dot {
+        width: 21px; height: 21px; border-radius: 50%;
+        background: var(--primary-container); color: var(--primary);
+        display: inline-flex; align-items: center; justify-content: center;
+        flex-shrink: 0; margin-top: 2px; font-size: 0.74rem; font-weight: 800;
+      }
+      .trust-panel {
+        background: var(--bg);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-lg);
+        padding: 22px;
+        display: flex; flex-direction: column; gap: 12px;
+      }
+      .trust-row {
+        display: flex; align-items: flex-start; gap: 11px;
+        padding: 10px 12px; border-radius: 14px;
+        background: var(--surface); border: 1px solid var(--border);
+        font-size: 0.85rem; color: var(--muted);
+      }
+      .trust-row strong { color: var(--text); display: block; font-size: 0.88rem; }
+
+      /* FAQ Accordion */
+      .faq-list { display: flex; flex-direction: column; gap: 10px; }
+      details.faq-item {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: var(--radius-md); padding: 16px 20px;
+        transition: border-color 0.2s, transform 0.25s var(--spring);
+      }
+      details.faq-item:hover { border-color: var(--border-strong); }
+      details.faq-item[open] { border-color: var(--primary); }
+      details.faq-item summary {
+        list-style: none; cursor: pointer;
+        font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.02rem;
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      }
+      details.faq-item summary::-webkit-details-marker { display: none; }
+      details.faq-item p { margin: 12px 0 0; color: var(--muted); font-size: 0.92rem; }
+
+      /* Final CTA */
+      .cta-banner {
+        position: relative; overflow: hidden; border-radius: var(--radius-xl);
+        padding: 42px 34px;
+        background: linear-gradient(135deg, var(--primary-container) 0%, var(--surface) 75%);
+        border: 1px solid var(--border-strong);
+        display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+      }
+      .cta-banner h2 {
+        margin: 0 0 8px; font-family: 'Outfit', sans-serif;
+        font-size: clamp(1.6rem, 3vw, 2.25rem); font-weight: 900; letter-spacing: -0.025em;
+      }
+      .cta-banner p { margin: 0; color: var(--muted); max-width: 520px; }
+
+      footer {
+        border-top: 1px solid var(--border);
+        padding-top: 24px;
+        display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+        color: var(--muted); font-size: 0.84rem;
+      }
+      footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+      footer a:hover { text-decoration: underline; }
+
+      /* Expressive Scroll Reveal (scale + lift + stagger) */
+      .reveal {
+        opacity: 0;
+        transform: translateY(30px) scale(0.965);
+        transition: opacity 0.7s var(--spring), transform 0.72s cubic-bezier(0.22, 1.14, 0.36, 1);
+      }
+      .reveal.in {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      .stagger-grid > * {
+        opacity: 0;
+        transform: translateY(24px) scale(0.95);
+        transition: opacity 0.6s var(--spring), transform 0.65s cubic-bezier(0.22, 1.16, 0.36, 1);
+      }
+      .stagger-grid.in > * {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      .stagger-grid.in > *:nth-child(1) { transition-delay: 40ms; }
+      .stagger-grid.in > *:nth-child(2) { transition-delay: 110ms; }
+      .stagger-grid.in > *:nth-child(3) { transition-delay: 180ms; }
+      .stagger-grid.in > *:nth-child(4) { transition-delay: 250ms; }
+      .stagger-grid.in > *:nth-child(5) { transition-delay: 320ms; }
+      .stagger-grid.in > *:nth-child(6) { transition-delay: 390ms; }
+
+      @media (max-width: 960px) {
+        .hero, .showcase, .security-box { grid-template-columns: 1fr; }
+        .metrics { grid-template-columns: repeat(2, 1fr); }
+        .theme-gallery { grid-template-columns: repeat(3, 1fr); }
+        .bento { grid-template-columns: 1fr; }
+        .bento-card.span-2 { grid-column: span 1; }
+        .nav-links { display: none; }
+      }
+      @media (max-width: 560px) {
+        .monet-bar { display: none; }
+        .theme-gallery { grid-template-columns: repeat(2, 1fr); }
+        .showcase, .security-box, .cta-banner { padding: 22px 18px; }
+        main { gap: 52px; padding: 20px 14px 64px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .mesh-orb, .pulse-dot { animation: none !important; }
+        .reveal, .stagger-grid > * { opacity: 1 !important; transform: none !important; }
+        .aosp-sep-entry { transform: none !important; opacity: 1 !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mesh-bg" aria-hidden="true">
+      <div class="mesh-orb mesh-orb--1"></div>
+      <div class="mesh-orb mesh-orb--2"></div>
+      <div class="mesh-orb mesh-orb--3"></div>
+    </div>
+
+    <div class="nav-wrap">
+      <nav class="navbar" aria-label="Navegação principal">
+        <a class="nav-brand" href="/inicio">
+          <svg viewBox="0 0 1000 1000" aria-hidden="true">
+            <use href="#def-logo-orb1" />
+            <use href="#def-logo-orb2" />
+            <use href="#def-logo-seal" />
+            <use href="#hero-logo-typo" />
+          </svg>
+          <span>n²sac</span>
+        </a>
+        <div class="nav-links">
+          <a href="#preview">Telas reais</a>
+          <a href="#temas">Temas</a>
+          <a href="#recursos">Recursos</a>
+          <a href="#privacidade">Privacidade</a>
+          <a href="#faq">Dúvidas</a>
+        </div>
+        <div class="nav-right">
+          <div class="monet-bar" id="monet-bar" title="Clique para mudar o tema da página toda"></div>
+          <button class="mode-btn" id="mode-toggle" type="button" aria-label="Alternar claro e escuro" title="Alternar claro/escuro">☀</button>
+          <a class="btn btn-primary btn-sm" href="/">Abrir App</a>
+        </div>
+      </nav>
+    </div>
+
+    <main>
+      <!-- HERO -->
+      <section class="hero">
+        <div>
+          <h1>
+            O NSAC do CTI,<br />
+            <span class="accent">do jeito que deveria ser.</span>
+          </h1>
+          <p class="hero-sub">
+            Acompanhe suas notas e médias da sala, receba avisos no celular assim que sair nota nova, baixe suas fichas de avaliação em PDF e converse com a sua turma — tudo em um só aplicativo, feito com carinho por um estudante.
+          </p>
+          <div class="hero-ctas">
+            <a class="btn btn-primary" href="/">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+              Abrir aplicativo web
+            </a>
+            <a class="btn btn-secondary" href="https://github.com/criperrr/n2sac/releases/latest" target="_blank" rel="noopener">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Baixar APK Android
+            </a>
+            <a class="btn btn-secondary" href="/privacidade">Política de Privacidade</a>
+          </div>
+          <div class="trust-strip">
+            <span class="trust-chip">Exclusivo @unesp.br</span>
+            <span class="trust-chip">Web &amp; Android</span>
+            <span class="trust-chip">100% Gratuito &amp; Sem Anúncios</span>
+            <span class="trust-chip">Open Source</span>
+          </div>
+        </div>
+
+        <div class="hero-stage" id="hero-stage">
+          <div class="logo-hitbox" id="hero-logo-hitbox" title="Arraste em círculo ou clique rápido para acelerar o motor!">
+            <svg id="hero-logo-svg" class="hero-logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" role="img" aria-label="Logo interativa n²sac">
+  <defs>
+    <mask id="hero-logo-mask" maskUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="1000" height="1000" fill="white" />
+      <path fill="black" fill-rule="evenodd" d="M448 222 a6 6 0 1 0 0.1 0 Z M500 216 a11.5 11.5 0 1 0 0.1 0 Z M552 222 a6 6 0 1 0 0.1 0 Z" />
+      <path fill="none" stroke="black" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" d="M264.55 341.19 L264.90 337.16 L265.44 333.21 L266.30 329.43 L267.57 325.91 L269.31 322.72 L271.54 319.90 L274.25 317.46 L277.38 315.40 L280.86 313.66 L284.57 312.18 L288.39 310.86 L292.21 309.59 L295.89 308.27 L299.34 306.79 L302.47 305.04 L305.25 302.97 L307.64 300.52 L309.68 297.69 L311.41 294.49 L312.92 291.00 L314.29 287.30 L315.63 283.50 L317.07 279.72 L318.68 276.09 L320.57 272.74 L322.80 269.76 L325.39 267.23 L328.36 265.20 L331.68 263.66 L335.30 262.59 L339.15 261.90 L343.14 261.51 L347.18 261.27 L351.18 261.07 L355.05 260.74 L358.73 260.18 L362.17 259.26 L365.35 257.92 L368.27 256.11 L370.95 253.84 L373.44 251.16 L375.80 248.14 L378.10 244.91 L380.42 241.60 L382.83 238.36 L385.38 235.35 L388.14 232.69 L391.12 230.51" />
+      <path fill="black" fill-rule="evenodd" d="M688 280 a17 17 0 1 0 0.1 0 Z M688 286 a11 11 0 1 1 -0.1 0 Z M666 281 a4.5 4.5 0 1 0 0.1 0 Z M705 316 a5 5 0 1 0 0.1 0 Z" />
+      <path fill="black" fill-rule="evenodd" d="M762 434 a10 10 0 1 0 0.1 0 Z M762 439 a5 5 0 1 1 -0.1 0 Z M774 500 a5 5 0 1 0 0.1 0 Z M756 516 a5.5 5.5 0 1 0 0.1 0 Z" />
+      <path fill="none" stroke="black" stroke-width="10" stroke-linecap="round" stroke-dasharray="22 18" d="M711.05 690.03 A284.00 284.00 0 0 1 539.53 781.24" />
+      <path fill="none" stroke="black" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" d="M333.07 729.76 L329.39 729.52 L325.79 729.10 L322.37 728.38 L319.22 727.27 L316.41 725.70 L313.98 723.67 L311.94 721.17 L310.27 718.26 L308.92 715.03 L307.83 711.56 L306.89 707.99 L306.00 704.44 L305.03 701.02 L303.89 697.83 L302.47 694.96 L300.72 692.45 L298.57 690.32 L296.03 688.55 L293.13 687.09 L289.92 685.86 L286.49 684.78 L282.96 683.74 L279.45 682.61 L276.09 681.32 L273.00 679.76 L270.28 677.87 L268.00 675.62 L266.20 673.00 L264.89 670.03 L264.03 666.77 L263.55 663.27 L263.35 659.62 L263.29 655.93 L263.25 652.28 L263.09 648.76 L262.68 645.43 L261.91 642.35 L260.71 639.55 L259.04 637.02 L256.91 634.75 L254.36 632.68 L251.48 630.75 L248.37 628.90 L245.18 627.05 L242.06 625.11 L239.15 623.02 L236.58 620.74 L234.47 618.22" />
+      <path fill="black" fill-rule="evenodd" d="M250 378 a10.5 10.5 0 1 0 0.1 0 Z M222 500 a5.5 5.5 0 1 0 0.1 0 Z M248 580 a6 6 0 1 0 0.1 0 Z M450 756 a10.5 10.5 0 1 0 0.1 0 Z M728 634 a10.5 10.5 0 1 0 0.1 0 Z" />
+    </mask>
+  </defs>
+  <g fill-rule="evenodd" style="isolation: isolate;">
+    <g id="hero-logo-orb1" style="transform-origin:500px 500px; mix-blend-mode:var(--logo-blend);"><path id="def-logo-orb1" fill="var(--logo-orb1)" fill-opacity="0.54" d="M904.00 500.00 C904.00 504.22 903.83 506.36 903.18 510.56 C902.53 514.76 902.02 516.87 900.77 521.00 C899.52 525.14 898.70 527.20 896.91 531.24 C895.13 535.27 894.06 537.27 891.84 541.18 C889.63 545.10 888.36 547.02 885.85 550.80 C883.33 554.58 881.95 556.42 879.27 560.07 C876.60 563.72 875.17 565.50 872.48 569.04 C869.79 572.57 868.40 574.30 865.83 577.76 C863.26 581.22 861.97 582.91 859.64 586.34 C857.31 589.77 856.18 591.46 854.19 594.90 C852.19 598.35 851.26 600.06 849.66 603.58 C848.06 607.09 847.36 608.85 846.18 612.48 C845.00 616.11 844.54 617.95 843.76 621.73 C842.99 625.52 842.74 627.45 842.32 631.41 C841.91 635.37 841.84 637.40 841.70 641.54 C841.57 645.68 841.62 647.81 841.67 652.12 C841.71 656.43 841.82 658.65 841.92 663.09 C842.02 667.53 842.13 669.81 842.15 674.33 C842.17 678.85 842.20 681.17 842.01 685.70 C841.83 690.23 841.72 692.53 841.21 697.00 C840.71 701.47 840.40 703.71 839.47 708.03 C838.54 712.34 837.99 714.49 836.58 718.57 C835.16 722.66 834.33 724.66 832.39 728.44 C830.44 732.22 829.33 734.05 826.84 737.47 C824.36 740.88 822.97 742.51 819.97 745.52 C816.98 748.54 815.33 749.95 811.88 752.56 C808.44 755.17 806.57 756.36 802.75 758.57 C798.93 760.79 796.89 761.77 792.80 763.64 C788.71 765.50 786.55 766.31 782.30 767.89 C778.04 769.47 775.84 770.15 771.53 771.53 C767.22 772.91 765.02 773.51 760.76 774.79 C756.51 776.07 754.37 776.65 750.25 777.94 C746.14 779.23 744.10 779.84 740.20 781.24 C736.30 782.65 734.40 783.35 730.76 784.96 C727.12 786.58 725.37 787.42 722.00 789.32 C718.64 791.23 717.04 792.24 713.95 794.48 C710.86 796.73 709.41 797.94 706.56 800.54 C703.71 803.15 702.37 804.56 699.71 807.52 C697.05 810.49 695.79 812.08 693.25 815.36 C690.71 818.63 689.50 820.38 687.00 823.89 C684.50 827.41 683.29 829.27 680.76 832.92 C678.23 836.57 676.98 838.48 674.33 842.15 C671.69 845.82 670.36 847.71 667.54 851.26 C664.73 854.82 663.29 856.62 660.25 859.94 C657.22 863.25 655.65 864.89 652.36 867.84 C649.08 870.78 647.37 872.20 643.82 874.66 C640.27 877.13 638.43 878.27 634.63 880.18 C630.83 882.10 628.86 882.92 624.84 884.23 C620.83 885.53 618.74 886.03 614.55 886.71 C610.35 887.39 608.19 887.56 603.87 887.65 C599.55 887.73 597.33 887.59 592.94 887.14 C588.55 886.69 586.32 886.29 581.92 885.39 C577.51 884.49 575.29 883.88 570.92 882.66 C566.55 881.44 564.37 880.69 560.07 879.27 C555.78 877.86 553.64 877.05 549.45 875.58 C545.25 874.12 543.18 873.32 539.09 871.95 C535.01 870.58 533.00 869.87 529.02 868.72 C525.04 867.56 523.09 867.01 519.19 866.18 C515.30 865.34 513.38 864.99 509.55 864.56 C505.71 864.12 503.82 864.00 500.00 864.00 C496.18 864.00 494.29 864.12 490.45 864.56 C486.62 864.99 484.70 865.34 480.81 866.18 C476.91 867.01 474.96 867.56 470.98 868.72 C467.00 869.87 464.99 870.58 460.91 871.95 C456.82 873.32 454.75 874.12 450.55 875.58 C446.36 877.05 444.22 877.86 439.93 879.27 C435.63 880.69 433.45 881.44 429.08 882.66 C424.71 883.88 422.49 884.49 418.08 885.39 C413.68 886.29 411.45 886.69 407.06 887.14 C402.67 887.59 400.45 887.73 396.13 887.65 C391.81 887.56 389.65 887.39 385.45 886.71 C381.26 886.03 379.17 885.53 375.16 884.23 C371.14 882.92 369.17 882.10 365.37 880.18 C361.57 878.27 359.73 877.13 356.18 874.66 C352.63 872.20 350.92 870.78 347.64 867.84 C344.35 864.89 342.78 863.25 339.75 859.94 C336.71 856.62 335.27 854.82 332.46 851.26 C329.64 847.71 328.31 845.82 325.67 842.15 C323.02 838.48 321.77 836.57 319.24 832.92 C316.71 829.27 315.50 827.41 313.00 823.89 C310.50 820.38 309.29 818.63 306.75 815.36 C304.21 812.08 302.95 810.49 300.29 807.52 C297.63 804.56 296.29 803.15 293.44 800.54 C290.59 797.94 289.14 796.73 286.05 794.48 C282.96 792.24 281.36 791.23 278.00 789.32 C274.63 787.42 272.88 786.58 269.24 784.96 C265.60 783.35 263.70 782.65 259.80 781.24 C255.90 779.84 253.86 779.23 249.75 777.94 C245.63 776.65 243.49 776.07 239.24 774.79 C234.98 773.51 232.78 772.91 228.47 771.53 C224.16 770.15 221.96 769.47 217.70 767.89 C213.45 766.31 211.29 765.50 207.20 763.64 C203.11 761.77 201.07 760.79 197.25 758.57 C193.43 756.36 191.56 755.17 188.12 752.56 C184.67 749.95 183.02 748.54 180.03 745.52 C177.03 742.51 175.64 740.88 173.16 737.47 C170.67 734.05 169.56 732.22 167.61 728.44 C165.67 724.66 164.84 722.66 163.42 718.57 C162.01 714.49 161.46 712.34 160.53 708.03 C159.60 703.71 159.29 701.47 158.79 697.00 C158.28 692.53 158.17 690.23 157.99 685.70 C157.80 681.17 157.83 678.85 157.85 674.33 C157.87 669.81 157.98 667.53 158.08 663.09 C158.18 658.65 158.29 656.43 158.33 652.12 C158.38 647.81 158.43 645.68 158.30 641.54 C158.16 637.40 158.09 635.37 157.68 631.41 C157.26 627.45 157.01 625.52 156.24 621.73 C155.46 617.95 155.00 616.11 153.82 612.48 C152.64 608.85 151.94 607.09 150.34 603.58 C148.74 600.06 147.81 598.35 145.81 594.90 C143.82 591.46 142.69 589.77 140.36 586.34 C138.03 582.91 136.74 581.22 134.17 577.76 C131.60 574.30 130.21 572.57 127.52 569.04 C124.83 565.50 123.40 563.72 120.73 560.07 C118.05 556.42 116.67 554.58 114.15 550.80 C111.64 547.02 110.37 545.10 108.16 541.18 C105.94 537.27 104.87 535.27 103.09 531.24 C101.30 527.20 100.48 525.14 99.23 521.00 C97.98 516.87 97.47 514.76 96.82 510.56 C96.17 506.36 96.00 504.22 96.00 500.00 C96.00 495.78 96.17 493.64 96.82 489.44 C97.47 485.24 97.98 483.13 99.23 479.00 C100.48 474.86 101.30 472.80 103.09 468.76 C104.87 464.73 105.94 462.73 108.16 458.82 C110.37 454.90 111.64 452.98 114.15 449.20 C116.67 445.42 118.05 443.58 120.73 439.93 C123.40 436.28 124.83 434.50 127.52 430.96 C130.21 427.43 131.60 425.70 134.17 422.24 C136.74 418.78 138.03 417.09 140.36 413.66 C142.69 410.23 143.82 408.54 145.81 405.10 C147.81 401.65 148.74 399.94 150.34 396.42 C151.94 392.91 152.64 391.15 153.82 387.52 C155.00 383.89 155.46 382.05 156.24 378.27 C157.01 374.48 157.26 372.55 157.68 368.59 C158.09 364.63 158.16 362.60 158.30 358.46 C158.43 354.32 158.38 352.19 158.33 347.88 C158.29 343.57 158.18 341.35 158.08 336.91 C157.98 332.47 157.87 330.19 157.85 325.67 C157.83 321.15 157.80 318.83 157.99 314.30 C158.17 309.77 158.28 307.47 158.79 303.00 C159.29 298.53 159.60 296.29 160.53 291.97 C161.46 287.66 162.01 285.51 163.42 281.43 C164.84 277.34 165.67 275.34 167.61 271.56 C169.56 267.78 170.67 265.95 173.16 262.53 C175.64 259.12 177.03 257.49 180.03 254.48 C183.02 251.46 184.67 250.05 188.12 247.44 C191.56 244.83 193.43 243.64 197.25 241.43 C201.07 239.21 203.11 238.23 207.20 236.36 C211.29 234.50 213.45 233.69 217.70 232.11 C221.96 230.53 224.16 229.85 228.47 228.47 C232.78 227.09 234.98 226.49 239.24 225.21 C243.49 223.93 245.63 223.35 249.75 222.06 C253.86 220.77 255.90 220.16 259.80 218.76 C263.70 217.35 265.60 216.65 269.24 215.04 C272.88 213.42 274.63 212.58 278.00 210.68 C281.36 208.77 282.96 207.76 286.05 205.52 C289.14 203.27 290.59 202.06 293.44 199.46 C296.29 196.85 297.63 195.44 300.29 192.48 C302.95 189.51 304.21 187.92 306.75 184.64 C309.29 181.37 310.50 179.62 313.00 176.11 C315.50 172.59 316.71 170.73 319.24 167.08 C321.77 163.43 323.02 161.52 325.67 157.85 C328.31 154.18 329.64 152.29 332.46 148.74 C335.27 145.18 336.71 143.38 339.75 140.06 C342.78 136.75 344.35 135.11 347.64 132.16 C350.92 129.22 352.63 127.80 356.18 125.34 C359.73 122.87 361.57 121.73 365.37 119.82 C369.17 117.90 371.14 117.08 375.16 115.77 C379.17 114.47 381.26 113.97 385.45 113.29 C389.65 112.61 391.81 112.44 396.13 112.35 C400.45 112.27 402.67 112.41 407.06 112.86 C411.45 113.31 413.68 113.71 418.08 114.61 C422.49 115.51 424.71 116.12 429.08 117.34 C433.45 118.56 435.63 119.31 439.93 120.73 C444.22 122.14 446.36 122.95 450.55 124.42 C454.75 125.88 456.82 126.68 460.91 128.05 C464.99 129.42 467.00 130.13 470.98 131.28 C474.96 132.44 476.91 132.99 480.81 133.82 C484.70 134.66 486.62 135.01 490.45 135.44 C494.29 135.88 496.18 136.00 500.00 136.00 C503.82 136.00 505.71 135.88 509.55 135.44 C513.38 135.01 515.30 134.66 519.19 133.82 C523.09 132.99 525.04 132.44 529.02 131.28 C533.00 130.13 535.01 129.42 539.09 128.05 C543.18 126.68 545.25 125.88 549.45 124.42 C553.64 122.95 555.78 122.14 560.07 120.73 C564.37 119.31 566.55 118.56 570.92 117.34 C575.29 116.12 577.51 115.51 581.92 114.61 C586.32 113.71 588.55 113.31 592.94 112.86 C597.33 112.41 599.55 112.27 603.87 112.35 C608.19 112.44 610.35 112.61 614.55 113.29 C618.74 113.97 620.83 114.47 624.84 115.77 C628.86 117.08 630.83 117.90 634.63 119.82 C638.43 121.73 640.27 122.87 643.82 125.34 C647.37 127.80 649.08 129.22 652.36 132.16 C655.65 135.11 657.22 136.75 660.25 140.06 C663.29 143.38 664.73 145.18 667.54 148.74 C670.36 152.29 671.69 154.18 674.33 157.85 C676.98 161.52 678.23 163.43 680.76 167.08 C683.29 170.73 684.50 172.59 687.00 176.11 C689.50 179.62 690.71 181.37 693.25 184.64 C695.79 187.92 697.05 189.51 699.71 192.48 C702.37 195.44 703.71 196.85 706.56 199.46 C709.41 202.06 710.86 203.27 713.95 205.52 C717.04 207.76 718.64 208.77 722.00 210.68 C725.37 212.58 727.12 213.42 730.76 215.04 C734.40 216.65 736.30 217.35 740.20 218.76 C744.10 220.16 746.14 220.77 750.25 222.06 C754.37 223.35 756.51 223.93 760.76 225.21 C765.02 226.49 767.22 227.09 771.53 228.47 C775.84 229.85 778.04 230.53 782.30 232.11 C786.55 233.69 788.71 234.50 792.80 236.36 C796.89 238.23 798.93 239.21 802.75 241.43 C806.57 243.64 808.44 244.83 811.88 247.44 C815.33 250.05 816.98 251.46 819.97 254.48 C822.97 257.49 824.36 259.12 826.84 262.53 C829.33 265.95 830.44 267.78 832.39 271.56 C834.33 275.34 835.16 277.34 836.58 281.43 C837.99 285.51 838.54 287.66 839.47 291.97 C840.40 296.29 840.71 298.53 841.21 303.00 C841.72 307.47 841.83 309.77 842.01 314.30 C842.20 318.83 842.17 321.15 842.15 325.67 C842.13 330.19 842.02 332.47 841.92 336.91 C841.82 341.35 841.71 343.57 841.67 347.88 C841.62 352.19 841.57 354.32 841.70 358.46 C841.84 362.60 841.91 364.63 842.32 368.59 C842.74 372.55 842.99 374.48 843.76 378.27 C844.54 382.05 845.00 383.89 846.18 387.52 C847.36 391.15 848.06 392.91 849.66 396.42 C851.26 399.94 852.19 401.65 854.19 405.10 C856.18 408.54 857.31 410.23 859.64 413.66 C861.97 417.09 863.26 418.78 865.83 422.24 C868.40 425.70 869.79 427.43 872.48 430.96 C875.17 434.50 876.60 436.28 879.27 439.93 C881.95 443.58 883.33 445.42 885.85 449.20 C888.36 452.98 889.63 454.90 891.84 458.82 C894.06 462.73 895.13 464.73 896.91 468.76 C898.70 472.80 899.52 474.86 900.77 479.00 C902.02 483.13 902.53 485.24 903.18 489.44 C903.83 493.64 904.00 495.78 904.00 500.00 Z M728.00 500.00 A228.00 228.00 0 1 0 272.00 500.00 A228.00 228.00 0 1 0 728.00 500.00 Z" /></g>
+    <g id="hero-logo-orb2" style="transform-origin:500px 500px; mix-blend-mode:var(--logo-blend);"><path id="def-logo-orb2" fill="var(--logo-orb2)" fill-opacity="0.52" d="M864.00 500.00 C864.00 503.82 864.12 505.71 864.56 509.55 C864.99 513.38 865.34 515.30 866.18 519.19 C867.01 523.09 867.56 525.04 868.72 529.02 C869.87 533.00 870.58 535.01 871.95 539.09 C873.32 543.18 874.12 545.25 875.58 549.45 C877.05 553.64 877.86 555.78 879.27 560.07 C880.69 564.37 881.44 566.55 882.66 570.92 C883.88 575.29 884.49 577.51 885.39 581.92 C886.29 586.32 886.69 588.55 887.14 592.94 C887.59 597.33 887.73 599.55 887.65 603.87 C887.56 608.19 887.39 610.35 886.71 614.55 C886.03 618.74 885.53 620.83 884.23 624.84 C882.92 628.86 882.10 630.83 880.18 634.63 C878.27 638.43 877.13 640.27 874.66 643.82 C872.20 647.37 870.78 649.08 867.84 652.36 C864.89 655.65 863.25 657.22 859.94 660.25 C856.62 663.29 854.82 664.73 851.26 667.54 C847.71 670.36 845.82 671.69 842.15 674.33 C838.48 676.98 836.57 678.23 832.92 680.76 C829.27 683.29 827.41 684.50 823.89 687.00 C820.38 689.50 818.63 690.71 815.36 693.25 C812.08 695.79 810.49 697.05 807.52 699.71 C804.56 702.37 803.15 703.71 800.54 706.56 C797.94 709.41 796.73 710.86 794.48 713.95 C792.24 717.04 791.23 718.64 789.32 722.00 C787.42 725.37 786.58 727.12 784.96 730.76 C783.35 734.40 782.65 736.30 781.24 740.20 C779.84 744.10 779.23 746.14 777.94 750.25 C776.65 754.37 776.07 756.51 774.79 760.76 C773.51 765.02 772.91 767.22 771.53 771.53 C770.15 775.84 769.47 778.04 767.89 782.30 C766.31 786.55 765.50 788.71 763.64 792.80 C761.77 796.89 760.79 798.93 758.57 802.75 C756.36 806.57 755.17 808.44 752.56 811.88 C749.95 815.33 748.54 816.98 745.52 819.97 C742.51 822.97 740.88 824.36 737.47 826.84 C734.05 829.33 732.22 830.44 728.44 832.39 C724.66 834.33 722.66 835.16 718.57 836.58 C714.49 837.99 712.34 838.54 708.03 839.47 C703.71 840.40 701.47 840.71 697.00 841.21 C692.53 841.72 690.23 841.83 685.70 842.01 C681.17 842.20 678.85 842.17 674.33 842.15 C669.81 842.13 667.53 842.02 663.09 841.92 C658.65 841.82 656.43 841.71 652.12 841.67 C647.81 841.62 645.68 841.57 641.54 841.70 C637.40 841.84 635.37 841.91 631.41 842.32 C627.45 842.74 625.52 842.99 621.73 843.76 C617.95 844.54 616.11 845.00 612.48 846.18 C608.85 847.36 607.09 848.06 603.58 849.66 C600.06 851.26 598.35 852.19 594.90 854.19 C591.46 856.18 589.77 857.31 586.34 859.64 C582.91 861.97 581.22 863.26 577.76 865.83 C574.30 868.40 572.57 869.79 569.04 872.48 C565.50 875.17 563.72 876.60 560.07 879.27 C556.42 881.95 554.58 883.33 550.80 885.85 C547.02 888.36 545.10 889.63 541.18 891.84 C537.27 894.06 535.27 895.13 531.24 896.91 C527.20 898.70 525.14 899.52 521.00 900.77 C516.87 902.02 514.76 902.53 510.56 903.18 C506.36 903.83 504.22 904.00 500.00 904.00 C495.78 904.00 493.64 903.83 489.44 903.18 C485.24 902.53 483.13 902.02 479.00 900.77 C474.86 899.52 472.80 898.70 468.76 896.91 C464.73 895.13 462.73 894.06 458.82 891.84 C454.90 889.63 452.98 888.36 449.20 885.85 C445.42 883.33 443.58 881.95 439.93 879.27 C436.28 876.60 434.50 875.17 430.96 872.48 C427.43 869.79 425.70 868.40 422.24 865.83 C418.78 863.26 417.09 861.97 413.66 859.64 C410.23 857.31 408.54 856.18 405.10 854.19 C401.65 852.19 399.94 851.26 396.42 849.66 C392.91 848.06 391.15 847.36 387.52 846.18 C383.89 845.00 382.05 844.54 378.27 843.76 C374.48 842.99 372.55 842.74 368.59 842.32 C364.63 841.91 362.60 841.84 358.46 841.70 C354.32 841.57 352.19 841.62 347.88 841.67 C343.57 841.71 341.35 841.82 336.91 841.92 C332.47 842.02 330.19 842.13 325.67 842.15 C321.15 842.17 318.83 842.20 314.30 842.01 C309.77 841.83 307.47 841.72 303.00 841.21 C298.53 840.71 296.29 840.40 291.97 839.47 C287.66 838.54 285.51 837.99 281.43 836.58 C277.34 835.16 275.34 834.33 271.56 832.39 C267.78 830.44 265.95 829.33 262.53 826.84 C259.12 824.36 257.49 822.97 254.48 819.97 C251.46 816.98 250.05 815.33 247.44 811.88 C244.83 808.44 243.64 806.57 241.43 802.75 C239.21 798.93 238.23 796.89 236.36 792.80 C234.50 788.71 233.69 786.55 232.11 782.30 C230.53 778.04 229.85 775.84 228.47 771.53 C227.09 767.22 226.49 765.02 225.21 760.76 C223.93 756.51 223.35 754.37 222.06 750.25 C220.77 746.14 220.16 744.10 218.76 740.20 C217.35 736.30 216.65 734.40 215.04 730.76 C213.42 727.12 212.58 725.37 210.68 722.00 C208.77 718.64 207.76 717.04 205.52 713.95 C203.27 710.86 202.06 709.41 199.46 706.56 C196.85 703.71 195.44 702.37 192.48 699.71 C189.51 697.05 187.92 695.79 184.64 693.25 C181.37 690.71 179.62 689.50 176.11 687.00 C172.59 684.50 170.73 683.29 167.08 680.76 C163.43 678.23 161.52 676.98 157.85 674.33 C154.18 671.69 152.29 670.36 148.74 667.54 C145.18 664.73 143.38 663.29 140.06 660.25 C136.75 657.22 135.11 655.65 132.16 652.36 C129.22 649.08 127.80 647.37 125.34 643.82 C122.87 640.27 121.73 638.43 119.82 634.63 C117.90 630.83 117.08 628.86 115.77 624.84 C114.47 620.83 113.97 618.74 113.29 614.55 C112.61 610.35 112.44 608.19 112.35 603.87 C112.27 599.55 112.41 597.33 112.86 592.94 C113.31 588.55 113.71 586.32 114.61 581.92 C115.51 577.51 116.12 575.29 117.34 570.92 C118.56 566.55 119.31 564.37 120.73 560.07 C122.14 555.78 122.95 553.64 124.42 549.45 C125.88 545.25 126.68 543.18 128.05 539.09 C129.42 535.01 130.13 533.00 131.28 529.02 C132.44 525.04 132.99 523.09 133.82 519.19 C134.66 515.30 135.01 513.38 135.44 509.55 C135.88 505.71 136.00 503.82 136.00 500.00 C136.00 496.18 135.88 494.29 135.44 490.45 C135.01 486.62 134.66 484.70 133.82 480.81 C132.99 476.91 132.44 474.96 131.28 470.98 C130.13 467.00 129.42 464.99 128.05 460.91 C126.68 456.82 125.88 454.75 124.42 450.55 C122.95 446.36 122.14 444.22 120.73 439.93 C119.31 435.63 118.56 433.45 117.34 429.08 C116.12 424.71 115.51 422.49 114.61 418.08 C113.71 413.68 113.31 411.45 112.86 407.06 C112.41 402.67 112.27 400.45 112.35 396.13 C112.44 391.81 112.61 389.65 113.29 385.45 C113.97 381.26 114.47 379.17 115.77 375.16 C117.08 371.14 117.90 369.17 119.82 365.37 C121.73 361.57 122.87 359.73 125.34 356.18 C127.80 352.63 129.22 350.92 132.16 347.64 C135.11 344.35 136.75 342.78 140.06 339.75 C143.38 336.71 145.18 335.27 148.74 332.46 C152.29 329.64 154.18 328.31 157.85 325.67 C161.52 323.02 163.43 321.77 167.08 319.24 C170.73 316.71 172.59 315.50 176.11 313.00 C179.62 310.50 181.37 309.29 184.64 306.75 C187.92 304.21 189.51 302.95 192.48 300.29 C195.44 297.63 196.85 296.29 199.46 293.44 C202.06 290.59 203.27 289.14 205.52 286.05 C207.76 282.96 208.77 281.36 210.68 278.00 C212.58 274.63 213.42 272.88 215.04 269.24 C216.65 265.60 217.35 263.70 218.76 259.80 C220.16 255.90 220.77 253.86 222.06 249.75 C223.35 245.63 223.93 243.49 225.21 239.24 C226.49 234.98 227.09 232.78 228.47 228.47 C229.85 224.16 230.53 221.96 232.11 217.70 C233.69 213.45 234.50 211.29 236.36 207.20 C238.23 203.11 239.21 201.07 241.43 197.25 C243.64 193.43 244.83 191.56 247.44 188.12 C250.05 184.67 251.46 183.02 254.48 180.03 C257.49 177.03 259.12 175.64 262.53 173.16 C265.95 170.67 267.78 169.56 271.56 167.61 C275.34 165.67 277.34 164.84 281.43 163.42 C285.51 162.01 287.66 161.46 291.97 160.53 C296.29 159.60 298.53 159.29 303.00 158.79 C307.47 158.28 309.77 158.17 314.30 157.99 C318.83 157.80 321.15 157.83 325.67 157.85 C330.19 157.87 332.47 157.98 336.91 158.08 C341.35 158.18 343.57 158.29 347.88 158.33 C352.19 158.38 354.32 158.43 358.46 158.30 C362.60 158.16 364.63 158.09 368.59 157.68 C372.55 157.26 374.48 157.01 378.27 156.24 C382.05 155.46 383.89 155.00 387.52 153.82 C391.15 152.64 392.91 151.94 396.42 150.34 C399.94 148.74 401.65 147.81 405.10 145.81 C408.54 143.82 410.23 142.69 413.66 140.36 C417.09 138.03 418.78 136.74 422.24 134.17 C425.70 131.60 427.43 130.21 430.96 127.52 C434.50 124.83 436.28 123.40 439.93 120.73 C443.58 118.05 445.42 116.67 449.20 114.15 C452.98 111.64 454.90 110.37 458.82 108.16 C462.73 105.94 464.73 104.87 468.76 103.09 C472.80 101.30 474.86 100.48 479.00 99.23 C483.13 97.98 485.24 97.47 489.44 96.82 C493.64 96.17 495.78 96.00 500.00 96.00 C504.22 96.00 506.36 96.17 510.56 96.82 C514.76 97.47 516.87 97.98 521.00 99.23 C525.14 100.48 527.20 101.30 531.24 103.09 C535.27 104.87 537.27 105.94 541.18 108.16 C545.10 110.37 547.02 111.64 550.80 114.15 C554.58 116.67 556.42 118.05 560.07 120.73 C563.72 123.40 565.50 124.83 569.04 127.52 C572.57 130.21 574.30 131.60 577.76 134.17 C581.22 136.74 582.91 138.03 586.34 140.36 C589.77 142.69 591.46 143.82 594.90 145.81 C598.35 147.81 600.06 148.74 603.58 150.34 C607.09 151.94 608.85 152.64 612.48 153.82 C616.11 155.00 617.95 155.46 621.73 156.24 C625.52 157.01 627.45 157.26 631.41 157.68 C635.37 158.09 637.40 158.16 641.54 158.30 C645.68 158.43 647.81 158.38 652.12 158.33 C656.43 158.29 658.65 158.18 663.09 158.08 C667.53 157.98 669.81 157.87 674.33 157.85 C678.85 157.83 681.17 157.80 685.70 157.99 C690.23 158.17 692.53 158.28 697.00 158.79 C701.47 159.29 703.71 159.60 708.03 160.53 C712.34 161.46 714.49 162.01 718.57 163.42 C722.66 164.84 724.66 165.67 728.44 167.61 C732.22 169.56 734.05 170.67 737.47 173.16 C740.88 175.64 742.51 177.03 745.52 180.03 C748.54 183.02 749.95 184.67 752.56 188.12 C755.17 191.56 756.36 193.43 758.57 197.25 C760.79 201.07 761.77 203.11 763.64 207.20 C765.50 211.29 766.31 213.45 767.89 217.70 C769.47 221.96 770.15 224.16 771.53 228.47 C772.91 232.78 773.51 234.98 774.79 239.24 C776.07 243.49 776.65 245.63 777.94 249.75 C779.23 253.86 779.84 255.90 781.24 259.80 C782.65 263.70 783.35 265.60 784.96 269.24 C786.58 272.88 787.42 274.63 789.32 278.00 C791.23 281.36 792.24 282.96 794.48 286.05 C796.73 289.14 797.94 290.59 800.54 293.44 C803.15 296.29 804.56 297.63 807.52 300.29 C810.49 302.95 812.08 304.21 815.36 306.75 C818.63 309.29 820.38 310.50 823.89 313.00 C827.41 315.50 829.27 316.71 832.92 319.24 C836.57 321.77 838.48 323.02 842.15 325.67 C845.82 328.31 847.71 329.64 851.26 332.46 C854.82 335.27 856.62 336.71 859.94 339.75 C863.25 342.78 864.89 344.35 867.84 347.64 C870.78 350.92 872.20 352.63 874.66 356.18 C877.13 359.73 878.27 361.57 880.18 365.37 C882.10 369.17 882.92 371.14 884.23 375.16 C885.53 379.17 886.03 381.26 886.71 385.45 C887.39 389.65 887.56 391.81 887.65 396.13 C887.73 400.45 887.59 402.67 887.14 407.06 C886.69 411.45 886.29 413.68 885.39 418.08 C884.49 422.49 883.88 424.71 882.66 429.08 C881.44 433.45 880.69 435.63 879.27 439.93 C877.86 444.22 877.05 446.36 875.58 450.55 C874.12 454.75 873.32 456.82 871.95 460.91 C870.58 464.99 869.87 467.00 868.72 470.98 C867.56 474.96 867.01 476.91 866.18 480.81 C865.34 484.70 864.99 486.62 864.56 490.45 C864.12 494.29 864.00 496.18 864.00 500.00 Z M728.00 500.00 A228.00 228.00 0 1 0 272.00 500.00 A228.00 228.00 0 1 0 728.00 500.00 Z" /></g>
+  </g>
+  <g id="hero-logo-seal" style="transform-origin:500px 500px;">
+    <g id="def-logo-seal" fill="var(--logo-seal)" fill-rule="evenodd" mask="url(#hero-logo-mask)">
+      <path d="M854.00 500.00 C854.00 503.70 853.84 505.57 853.24 509.25 C852.65 512.93 852.17 514.78 851.04 518.40 C849.90 522.02 849.15 523.82 847.57 527.35 C845.98 530.89 845.02 532.63 843.13 536.06 C841.23 539.50 840.14 541.18 838.08 544.51 C836.02 547.84 834.90 549.47 832.83 552.72 C830.77 555.96 829.69 557.55 827.78 560.75 C825.86 563.95 824.91 565.52 823.26 568.71 C821.62 571.90 820.84 573.48 819.56 576.72 C818.27 579.95 817.71 581.57 816.82 584.89 C815.93 588.22 815.61 589.89 815.10 593.34 C814.60 596.78 814.48 598.54 814.31 602.12 C814.13 605.71 814.18 607.55 814.24 611.28 C814.30 615.01 814.44 616.92 814.60 620.76 C814.76 624.61 814.93 626.58 815.04 630.50 C815.16 634.41 815.26 636.41 815.19 640.33 C815.12 644.25 815.08 646.24 814.68 650.09 C814.28 653.94 814.03 655.88 813.20 659.59 C812.38 663.29 811.87 665.13 810.54 668.61 C809.22 672.09 808.42 673.80 806.57 677.00 C804.72 680.20 803.65 681.74 801.29 684.63 C798.94 687.52 797.60 688.88 794.81 691.45 C792.01 694.02 790.46 695.20 787.32 697.47 C784.19 699.74 782.48 700.77 779.12 702.80 C775.77 704.82 773.98 705.73 770.53 707.59 C767.09 709.44 765.29 710.29 761.88 712.07 C758.48 713.85 756.75 714.69 753.49 716.50 C750.23 718.31 748.62 719.19 745.60 721.14 C742.58 723.08 741.12 724.06 738.38 726.22 C735.65 728.38 734.36 729.50 731.93 731.93 C729.50 734.36 728.38 735.65 726.22 738.38 C724.06 741.12 723.08 742.58 721.14 745.60 C719.19 748.62 718.31 750.23 716.50 753.49 C714.69 756.75 713.85 758.48 712.07 761.88 C710.29 765.29 709.44 767.09 707.59 770.53 C705.73 773.98 704.82 775.77 702.80 779.12 C700.77 782.48 699.74 784.19 697.47 787.32 C695.20 790.46 694.02 792.01 691.45 794.81 C688.88 797.60 687.52 798.94 684.63 801.29 C681.74 803.65 680.20 804.72 677.00 806.57 C673.80 808.42 672.09 809.22 668.61 810.54 C665.13 811.87 663.29 812.38 659.59 813.20 C655.88 814.03 653.94 814.28 650.09 814.68 C646.24 815.08 644.25 815.12 640.33 815.19 C636.41 815.26 634.41 815.16 630.50 815.04 C626.58 814.93 624.61 814.76 620.76 814.60 C616.92 814.44 615.01 814.30 611.28 814.24 C607.55 814.18 605.71 814.13 602.12 814.31 C598.54 814.48 596.78 814.60 593.34 815.10 C589.89 815.61 588.22 815.93 584.89 816.82 C581.57 817.71 579.95 818.27 576.72 819.56 C573.48 820.84 571.90 821.62 568.71 823.26 C565.52 824.91 563.95 825.86 560.75 827.78 C557.55 829.69 555.96 830.77 552.72 832.83 C549.47 834.90 547.84 836.02 544.51 838.08 C541.18 840.14 539.50 841.23 536.06 843.13 C532.63 845.02 530.89 845.98 527.35 847.57 C523.82 849.15 522.02 849.90 518.40 851.04 C514.78 852.17 512.93 852.65 509.25 853.24 C505.57 853.84 503.70 854.00 500.00 854.00 C496.30 854.00 494.43 853.84 490.75 853.24 C487.07 852.65 485.22 852.17 481.60 851.04 C477.98 849.90 476.18 849.15 472.65 847.57 C469.11 845.98 467.37 845.02 463.94 843.13 C460.50 841.23 458.82 840.14 455.49 838.08 C452.16 836.02 450.53 834.90 447.28 832.83 C444.04 830.77 442.45 829.69 439.25 827.78 C436.05 825.86 434.48 824.91 431.29 823.26 C428.10 821.62 426.52 820.84 423.28 819.56 C420.05 818.27 418.43 817.71 415.11 816.82 C411.78 815.93 410.11 815.61 406.66 815.10 C403.22 814.60 401.46 814.48 397.88 814.31 C394.29 814.13 392.45 814.18 388.72 814.24 C384.99 814.30 383.08 814.44 379.24 814.60 C375.39 814.76 373.42 814.93 369.50 815.04 C365.59 815.16 363.59 815.26 359.67 815.19 C355.75 815.12 353.76 815.08 349.91 814.68 C346.06 814.28 344.12 814.03 340.41 813.20 C336.71 812.38 334.87 811.87 331.39 810.54 C327.91 809.22 326.20 808.42 323.00 806.57 C319.80 804.72 318.26 803.65 315.37 801.29 C312.48 798.94 311.12 797.60 308.55 794.81 C305.98 792.01 304.80 790.46 302.53 787.32 C300.26 784.19 299.23 782.48 297.20 779.12 C295.18 775.77 294.27 773.98 292.41 770.53 C290.56 767.09 289.71 765.29 287.93 761.88 C286.15 758.48 285.31 756.75 283.50 753.49 C281.69 750.23 280.81 748.62 278.86 745.60 C276.92 742.58 275.94 741.12 273.78 738.38 C271.62 735.65 270.50 734.36 268.07 731.93 C265.64 729.50 264.35 728.38 261.62 726.22 C258.88 724.06 257.42 723.08 254.40 721.14 C251.38 719.19 249.77 718.31 246.51 716.50 C243.25 714.69 241.52 713.85 238.12 712.07 C234.71 710.29 232.91 709.44 229.47 707.59 C226.02 705.73 224.23 704.82 220.88 702.80 C217.52 700.77 215.81 699.74 212.68 697.47 C209.54 695.20 207.99 694.02 205.19 691.45 C202.40 688.88 201.06 687.52 198.71 684.63 C196.35 681.74 195.28 680.20 193.43 677.00 C191.58 673.80 190.78 672.09 189.46 668.61 C188.13 665.13 187.62 663.29 186.80 659.59 C185.97 655.88 185.72 653.94 185.32 650.09 C184.92 646.24 184.88 644.25 184.81 640.33 C184.74 636.41 184.84 634.41 184.96 630.50 C185.07 626.58 185.24 624.61 185.40 620.76 C185.56 616.92 185.70 615.01 185.76 611.28 C185.82 607.55 185.87 605.71 185.69 602.12 C185.52 598.54 185.40 596.78 184.90 593.34 C184.39 589.89 184.07 588.22 183.18 584.89 C182.29 581.57 181.73 579.95 180.44 576.72 C179.16 573.48 178.38 571.90 176.74 568.71 C175.09 565.52 174.14 563.95 172.22 560.75 C170.31 557.55 169.23 555.96 167.17 552.72 C165.10 549.47 163.98 547.84 161.92 544.51 C159.86 541.18 158.77 539.50 156.87 536.06 C154.98 532.63 154.02 530.89 152.43 527.35 C150.85 523.82 150.10 522.02 148.96 518.40 C147.83 514.78 147.35 512.93 146.76 509.25 C146.16 505.57 146.00 503.70 146.00 500.00 C146.00 496.30 146.16 494.43 146.76 490.75 C147.35 487.07 147.83 485.22 148.96 481.60 C150.10 477.98 150.85 476.18 152.43 472.65 C154.02 469.11 154.98 467.37 156.87 463.94 C158.77 460.50 159.86 458.82 161.92 455.49 C163.98 452.16 165.10 450.53 167.17 447.28 C169.23 444.04 170.31 442.45 172.22 439.25 C174.14 436.05 175.09 434.48 176.74 431.29 C178.38 428.10 179.16 426.52 180.44 423.28 C181.73 420.05 182.29 418.43 183.18 415.11 C184.07 411.78 184.39 410.11 184.90 406.66 C185.40 403.22 185.52 401.46 185.69 397.88 C185.87 394.29 185.82 392.45 185.76 388.72 C185.70 384.99 185.56 383.08 185.40 379.24 C185.24 375.39 185.07 373.42 184.96 369.50 C184.84 365.59 184.74 363.59 184.81 359.67 C184.88 355.75 184.92 353.76 185.32 349.91 C185.72 346.06 185.97 344.12 186.80 340.41 C187.62 336.71 188.13 334.87 189.46 331.39 C190.78 327.91 191.58 326.20 193.43 323.00 C195.28 319.80 196.35 318.26 198.71 315.37 C201.06 312.48 202.40 311.12 205.19 308.55 C207.99 305.98 209.54 304.80 212.68 302.53 C215.81 300.26 217.52 299.23 220.88 297.20 C224.23 295.18 226.02 294.27 229.47 292.41 C232.91 290.56 234.71 289.71 238.12 287.93 C241.52 286.15 243.25 285.31 246.51 283.50 C249.77 281.69 251.38 280.81 254.40 278.86 C257.42 276.92 258.88 275.94 261.62 273.78 C264.35 271.62 265.64 270.50 268.07 268.07 C270.50 265.64 271.62 264.35 273.78 261.62 C275.94 258.88 276.92 257.42 278.86 254.40 C280.81 251.38 281.69 249.77 283.50 246.51 C285.31 243.25 286.15 241.52 287.93 238.12 C289.71 234.71 290.56 232.91 292.41 229.47 C294.27 226.02 295.18 224.23 297.20 220.88 C299.23 217.52 300.26 215.81 302.53 212.68 C304.80 209.54 305.98 207.99 308.55 205.19 C311.12 202.40 312.48 201.06 315.37 198.71 C318.26 196.35 319.80 195.28 323.00 193.43 C326.20 191.58 327.91 190.78 331.39 189.46 C334.87 188.13 336.71 187.62 340.41 186.80 C344.12 185.97 346.06 185.72 349.91 185.32 C353.76 184.92 355.75 184.88 359.67 184.81 C363.59 184.74 365.59 184.84 369.50 184.96 C373.42 185.07 375.39 185.24 379.24 185.40 C383.08 185.56 384.99 185.70 388.72 185.76 C392.45 185.82 394.29 185.87 397.88 185.69 C401.46 185.52 403.22 185.40 406.66 184.90 C410.11 184.39 411.78 184.07 415.11 183.18 C418.43 182.29 420.05 181.73 423.28 180.44 C426.52 179.16 428.10 178.38 431.29 176.74 C434.48 175.09 436.05 174.14 439.25 172.22 C442.45 170.31 444.04 169.23 447.28 167.17 C450.53 165.10 452.16 163.98 455.49 161.92 C458.82 159.86 460.50 158.77 463.94 156.87 C467.37 154.98 469.11 154.02 472.65 152.43 C476.18 150.85 477.98 150.10 481.60 148.96 C485.22 147.83 487.07 147.35 490.75 146.76 C494.43 146.16 496.30 146.00 500.00 146.00 C503.70 146.00 505.57 146.16 509.25 146.76 C512.93 147.35 514.78 147.83 518.40 148.96 C522.02 150.10 523.82 150.85 527.35 152.43 C530.89 154.02 532.63 154.98 536.06 156.87 C539.50 158.77 541.18 159.86 544.51 161.92 C547.84 163.98 549.47 165.10 552.72 167.17 C555.96 169.23 557.55 170.31 560.75 172.22 C563.95 174.14 565.52 175.09 568.71 176.74 C571.90 178.38 573.48 179.16 576.72 180.44 C579.95 181.73 581.57 182.29 584.89 183.18 C588.22 184.07 589.89 184.39 593.34 184.90 C596.78 185.40 598.54 185.52 602.12 185.69 C605.71 185.87 607.55 185.82 611.28 185.76 C615.01 185.70 616.92 185.56 620.76 185.40 C624.61 185.24 626.58 185.07 630.50 184.96 C634.41 184.84 636.41 184.74 640.33 184.81 C644.25 184.88 646.24 184.92 650.09 185.32 C653.94 185.72 655.88 185.97 659.59 186.80 C663.29 187.62 665.13 188.13 668.61 189.46 C672.09 190.78 673.80 191.58 677.00 193.43 C680.20 195.28 681.74 196.35 684.63 198.71 C687.52 201.06 688.88 202.40 691.45 205.19 C694.02 207.99 695.20 209.54 697.47 212.68 C699.74 215.81 700.77 217.52 702.80 220.88 C704.82 224.23 705.73 226.02 707.59 229.47 C709.44 232.91 710.29 234.71 712.07 238.12 C713.85 241.52 714.69 243.25 716.50 246.51 C718.31 249.77 719.19 251.38 721.14 254.40 C723.08 257.42 724.06 258.88 726.22 261.62 C728.38 264.35 729.50 265.64 731.93 268.07 C734.36 270.50 735.65 271.62 738.38 273.78 C741.12 275.94 742.58 276.92 745.60 278.86 C748.62 280.81 750.23 281.69 753.49 283.50 C756.75 285.31 758.48 286.15 761.88 287.93 C765.29 289.71 767.09 290.56 770.53 292.41 C773.98 294.27 775.77 295.18 779.12 297.20 C782.48 299.23 784.19 300.26 787.32 302.53 C790.46 304.80 792.01 305.98 794.81 308.55 C797.60 311.12 798.94 312.48 801.29 315.37 C803.65 318.26 804.72 319.80 806.57 323.00 C808.42 326.20 809.22 327.91 810.54 331.39 C811.87 334.87 812.38 336.71 813.20 340.41 C814.03 344.12 814.28 346.06 814.68 349.91 C815.08 353.76 815.12 355.75 815.19 359.67 C815.26 363.59 815.16 365.59 815.04 369.50 C814.93 373.42 814.76 375.39 814.60 379.24 C814.44 383.08 814.30 384.99 814.24 388.72 C814.18 392.45 814.13 394.29 814.31 397.88 C814.48 401.46 814.60 403.22 815.10 406.66 C815.61 410.11 815.93 411.78 816.82 415.11 C817.71 418.43 818.27 420.05 819.56 423.28 C820.84 426.52 821.62 428.10 823.26 431.29 C824.91 434.48 825.86 436.05 827.78 439.25 C829.69 442.45 830.77 444.04 832.83 447.28 C834.90 450.53 836.02 452.16 838.08 455.49 C840.14 458.82 841.23 460.50 843.13 463.94 C845.02 467.37 845.98 469.11 847.57 472.65 C849.15 476.18 849.90 477.98 851.04 481.60 C852.17 485.22 852.65 487.07 853.24 490.75 C853.84 494.43 854.00 496.30 854.00 500.00 Z M728.00 500.00 A228.00 228.00 0 1 0 272.00 500.00 A228.00 228.00 0 1 0 728.00 500.00 Z" /></g>
+    </g>
+  </g>
+  <g id="hero-logo-typo" fill="var(--logo-text)" fill-rule="evenodd" style="transform-origin:500px 500px;">
+    <path d="M477.97 394.53 C485.06 394.08 489.00 393.71 497.07 395.21 C505.14 396.70 507.71 397.40 514.65 401.33 C521.59 405.26 523.64 407.28 528.61 413.09 C533.58 418.89 534.46 421.50 537.25 427.73 C540.04 433.96 539.98 434.75 541.30 441.41 C542.61 448.07 542.74 435.88 543.20 458.01 C543.67 480.14 543.61 522.01 543.40 541.99 C543.20 561.97 543.67 545.96 542.28 548.83 C540.90 551.70 539.75 553.24 537.11 555.03 C534.47 556.82 536.07 556.59 530.27 556.96 C524.47 557.33 516.11 557.13 510.74 556.70 C505.37 556.28 507.91 556.32 505.86 555.01 C503.81 553.71 502.81 553.22 501.40 550.78 C500.00 548.35 499.91 561.99 499.47 543.95 C499.02 525.90 499.90 489.16 499.40 468.75 C498.90 448.34 498.71 457.19 497.20 451.17 C495.69 445.16 494.93 444.84 492.52 441.41 C490.12 437.97 489.36 437.57 486.28 435.55 C483.19 433.52 482.80 433.15 478.52 432.19 C474.23 431.23 471.52 430.95 466.80 431.19 C462.07 431.43 460.90 431.78 457.03 433.28 C453.16 434.79 452.31 435.38 449.22 438.03 C446.13 440.68 445.21 441.78 442.98 445.31 C440.75 448.85 440.53 448.09 439.09 454.10 C437.65 460.12 437.03 453.11 436.44 472.66 C435.85 492.21 436.73 526.00 436.41 542.97 C436.08 559.94 436.25 547.23 434.98 549.80 C433.70 552.38 432.85 553.13 430.61 554.69 C428.37 556.24 431.45 556.65 424.80 556.88 C418.16 557.11 407.07 557.08 400.39 555.74 C393.72 554.40 396.15 553.38 394.46 550.78 C392.78 548.19 393.39 574.67 392.72 543.95 C392.04 513.22 391.32 442.29 391.40 411.13 C391.49 379.98 391.99 405.05 393.11 402.34 C394.22 399.64 394.67 399.94 396.48 398.85 C398.30 397.76 395.57 397.49 401.37 397.37 C407.17 397.26 416.93 396.80 422.85 398.32 C428.77 399.84 426.26 398.69 428.26 404.30 C430.27 409.91 430.57 419.18 431.96 423.83 C433.35 428.48 433.92 425.03 434.57 425.43 C437.01 421.89 440.25 416.14 444.34 411.26 C448.42 406.37 448.61 406.31 453.12 403.23 C457.64 400.15 459.38 399.17 464.84 397.26 C470.31 395.35 470.88 394.98 477.97 394.53 Z" />
+    <path d="M598.60 351.56 C606.55 351.10 610.64 351.25 618.16 353.31 C625.69 355.36 627.60 356.35 632.81 360.90 C638.02 365.46 639.46 367.48 641.84 374.02 C644.23 380.56 644.09 384.18 643.65 390.62 C643.22 397.07 643.12 397.52 639.87 403.32 C636.62 409.12 634.52 411.54 628.89 416.99 C623.25 422.44 622.64 422.93 614.26 428.09 C605.87 433.25 596.64 437.34 590.77 440.43 C603.23 440.33 628.77 439.40 640.62 440.05 C652.48 440.69 643.47 441.34 644.67 443.36 C645.88 445.38 645.92 446.00 646.11 449.22 C646.29 452.44 646.50 455.10 645.51 457.98 C644.52 460.86 658.57 461.16 641.60 462.31 C624.63 463.47 585.33 463.23 568.36 463.21 C551.39 463.20 566.00 463.19 564.45 462.26 C562.90 461.33 562.22 462.71 561.32 458.98 C560.42 455.26 560.11 449.53 560.37 445.31 C560.63 441.10 552.79 447.93 562.50 439.81 C572.21 431.70 593.75 416.91 604.49 408.42 C615.23 399.93 608.88 404.49 611.33 401.22 C613.77 397.95 614.47 396.74 615.60 393.55 C616.74 390.36 616.70 389.73 616.49 386.72 C616.28 383.71 616.01 382.36 614.66 379.88 C613.31 377.41 612.80 376.84 610.35 375.46 C607.90 374.08 606.52 373.81 603.52 373.59 C600.51 373.38 599.31 373.53 596.68 374.48 C594.05 375.44 593.32 376.10 591.58 377.93 C589.83 379.76 589.89 379.16 588.74 382.81 C587.59 386.46 587.62 391.24 586.36 394.53 C585.09 397.82 586.32 396.85 583.01 397.76 C579.69 398.68 575.16 398.94 571.29 398.68 C567.42 398.43 567.51 397.94 565.43 396.59 C563.35 395.25 562.48 396.68 561.82 392.58 C561.16 388.47 560.70 384.16 562.42 377.93 C564.15 371.70 565.34 369.22 569.66 364.26 C573.97 359.30 575.66 358.19 582.03 355.39 C588.40 352.60 590.65 352.02 598.60 351.56 Z" />
+    <path d="M397.20 593.75 C401.28 592.91 402.68 591.97 409.18 593.60 C415.68 595.24 420.50 597.50 426.76 601.18 C433.01 604.87 433.71 605.54 437.62 610.35 C441.53 615.16 442.97 618.96 444.52 623.05 C446.07 627.13 444.99 626.76 444.65 628.91 C444.32 631.05 443.94 631.43 443.01 632.81 C442.08 634.19 442.07 634.59 440.43 635.17 C438.79 635.75 438.72 636.62 435.55 635.46 C432.37 634.30 428.76 633.26 425.99 629.88 C423.22 626.51 424.51 623.19 422.96 620.12 C421.41 617.04 421.55 617.57 418.95 615.90 C416.34 614.22 414.03 612.65 411.13 612.50 C408.23 612.36 407.10 614.55 405.75 615.23 C406.12 616.63 402.74 615.24 407.23 620.83 C411.71 626.42 421.07 634.12 426.14 640.62 C431.21 647.13 429.46 646.52 430.27 650.39 C431.08 654.26 430.77 654.77 429.83 658.20 C428.90 661.64 428.00 663.22 426.03 666.02 C424.07 668.82 423.75 669.18 420.90 670.93 C418.05 672.68 417.81 673.69 413.09 673.96 C408.36 674.24 405.86 674.36 399.41 672.20 C392.97 670.05 390.13 668.53 383.79 664.16 C377.45 659.79 374.75 657.31 370.59 652.34 C366.42 647.38 366.22 645.25 364.86 641.60 C363.50 637.95 364.14 638.32 364.39 635.74 C364.65 633.16 364.96 631.86 366.00 629.88 C367.05 627.91 367.16 627.52 369.14 626.77 C371.12 626.01 371.56 625.08 375.00 626.44 C378.44 627.80 382.08 629.18 384.77 632.95 C387.45 636.71 385.47 639.86 387.19 643.55 C388.91 647.24 389.46 647.44 392.58 649.72 C395.70 652.00 398.14 653.49 401.37 653.92 C404.59 654.36 405.76 652.26 407.23 651.70 C407.03 650.15 410.51 651.00 406.42 645.51 C402.34 640.02 393.73 633.19 388.67 626.74 C383.62 620.29 384.61 620.03 383.45 616.21 C382.28 612.39 382.93 612.17 383.37 609.38 C383.81 606.58 383.85 606.14 385.45 603.52 C387.05 600.89 388.04 599.58 390.62 597.43 C393.21 595.28 393.12 594.59 397.20 593.75 Z" />
+    <path d="M492.29 624.02 C498.09 623.42 500.72 623.44 505.86 623.84 C510.99 624.23 511.80 624.49 515.62 625.82 C519.45 627.15 520.39 627.70 523.26 629.88 C526.13 632.06 526.59 632.09 528.67 635.74 C530.76 639.39 531.62 637.46 532.72 646.48 C533.83 655.51 533.16 669.60 533.69 676.76 C534.23 683.91 533.55 678.04 535.16 679.02 C536.77 679.99 539.37 679.97 541.02 681.19 C542.66 682.41 542.28 681.89 542.61 684.57 C542.95 687.25 543.31 690.54 542.53 693.36 C541.75 696.18 541.76 695.98 539.06 697.40 C536.37 698.82 534.36 699.64 530.27 699.83 C526.19 700.02 523.84 699.69 520.51 698.27 C517.17 696.84 517.05 696.44 515.12 693.36 C513.19 690.27 512.57 686.52 511.72 684.24 C509.77 687.06 508.20 691.89 503.91 695.49 C499.61 699.09 498.20 699.74 492.19 700.61 C486.17 701.48 481.50 700.52 476.56 699.46 C471.62 698.39 472.32 697.74 469.73 695.76 C467.14 693.77 466.41 692.89 464.79 690.43 C463.17 687.97 463.01 687.79 462.35 684.57 C461.70 681.35 461.35 679.43 461.81 675.78 C462.27 672.13 462.91 670.80 464.44 667.97 C465.97 665.14 465.01 665.35 468.75 662.90 C472.49 660.46 472.50 658.96 481.45 656.85 C490.39 654.74 502.41 654.20 509.39 653.32 C509.01 651.37 509.70 648.08 507.84 645.51 C505.99 642.94 504.64 642.32 500.98 641.65 C497.32 640.98 495.08 640.86 491.21 642.46 C487.34 644.07 485.98 647.27 483.40 648.95 C480.82 650.62 482.29 650.16 479.49 650.08 C476.70 650.00 473.59 649.81 470.70 648.59 C467.82 647.37 467.31 647.14 466.37 644.53 C465.43 641.92 465.46 639.64 466.42 636.72 C467.37 633.80 467.83 633.49 470.70 631.26 C473.58 629.04 474.74 628.19 479.49 626.60 C484.24 625.01 486.49 624.63 492.29 624.02 Z M502.93 665.91 C499.28 666.41 495.62 666.70 492.19 667.71 C488.75 668.72 488.85 668.73 487.30 670.51 C485.76 672.28 485.25 673.55 485.15 675.78 C485.05 678.02 485.74 679.10 486.86 680.66 C487.98 682.23 488.20 682.23 490.23 682.89 C492.27 683.55 492.68 684.36 496.09 683.65 C499.50 682.95 502.84 681.85 505.73 679.69 C508.62 677.53 508.35 676.65 509.24 673.83 C510.12 671.01 509.86 668.73 509.77 666.88 C509.67 665.03 510.29 665.64 508.79 665.43 C507.29 665.22 506.58 665.41 502.93 665.91 Z" />
+    <path d="M592.90 592.77 C597.84 591.56 597.18 592.14 600.59 592.70 C604.00 593.25 605.61 593.78 608.40 595.31 C611.19 596.84 611.91 597.43 613.28 599.66 C614.66 601.90 614.88 603.12 614.65 605.47 C614.42 607.82 614.25 608.12 612.23 610.35 C610.21 612.59 607.82 614.27 605.47 615.63 C603.12 616.98 603.93 616.90 601.56 616.51 C599.20 616.12 597.30 614.43 594.73 613.86 C592.15 613.29 592.96 612.56 589.84 613.93 C586.73 615.31 583.12 617.47 580.58 620.12 C578.04 622.77 578.68 623.40 578.30 625.98 C577.91 628.55 576.94 627.54 578.83 631.84 C580.73 636.13 583.19 641.50 586.91 645.51 C590.62 649.52 591.40 649.56 595.70 650.05 C600.00 650.55 602.79 649.85 606.45 647.76 C610.10 645.68 610.80 644.69 612.30 640.57 C613.81 636.44 610.92 632.99 613.28 629.02 C615.64 625.05 620.04 624.04 623.05 622.53 C626.05 621.01 625.19 621.82 626.95 622.15 C628.72 622.48 629.53 622.54 631.07 624.02 C632.60 625.51 633.13 626.54 633.92 628.91 C634.71 631.27 635.07 630.90 634.66 634.77 C634.26 638.63 634.64 641.25 632.08 646.48 C629.53 651.72 628.26 653.77 623.05 658.54 C617.84 663.32 614.84 665.37 608.40 668.18 C601.95 670.99 599.98 671.24 593.75 671.29 C587.52 671.35 585.66 670.97 580.08 668.44 C574.49 665.90 572.93 664.81 568.36 659.77 C563.79 654.72 562.00 651.87 559.29 645.51 C556.57 639.15 556.23 636.88 556.03 630.86 C555.82 624.84 556.06 623.46 558.35 618.16 C560.63 612.86 562.05 611.16 566.41 606.76 C570.76 602.37 572.30 601.28 578.12 598.20 C583.95 595.12 587.96 593.98 592.90 592.77 Z" />
+  </g>
+</svg>
+            <div class="spark-layer" id="spark-layer">
+              <div class="shockwave" id="shockwave"></div>
+            </div>
+          </div>
+          <div class="spin-hud">
+            <div class="rpm-bar-track"><div class="rpm-bar-fill" id="rpm-bar-fill"></div></div>
+            <div class="spin-caption" id="spin-caption">clique</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- REAL STUDENT METRICS -->
+      <section class="metrics stagger-grid" aria-label="Destaques do aplicativo">
+        <div class="metric-card">
+          <div class="metric-val">Alertas autônomos</div>
+          <div class="metric-lbl">Avisamos quando há notas, avisos do representante e mensagens novas diretamente no seu celular.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val">Expansão estatística</div>
+          <div class="metric-lbl">Expandimos as estatísticas dos seus dados. Agora você pode saber, por exemplo, quanto falta pra passar de ano.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val">3 Cursos, diurno e noturno</div>
+          <div class="metric-lbl">Nossa plataforma suporta todos os cursos e turmas do CTI, de todos os anos. Todos são bem-vindos</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val">Turma viva</div>
+          <div class="metric-lbl">Centralizamos os avisos, chat e off topic tudo num app só.</div>
+        </div>
+      </section>
+
+      <!-- SEPARATOR 1: AOSP GEOMETRIC SHAPE MORPH MARQUEE -->
+      <div class="aosp-sep-bleed" data-aosp-separator="1" aria-hidden="true">
+        <div class="aosp-sep-entry">
+          <div class="aosp-marquee-track"></div>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE REAL APP SCREENSHOTS SHOWCASE -->
+      <section id="preview" class="reveal">
+        <div class="sec-head">
+          <span class="sec-tag">Por dentro do aplicativo</span>
+          </div>
+
+        <div class="showcase">
+          <div class="tab-list" role="tablist">
+            <div class="sec-head"><h2>Veja as telas reais do n²sac.</h2></div>
+            
+            <p>Alterne entre as abas abaixo — e troque as cores lá no topo (ou nos cards de tema) para ver a captura real do aplicativo naquele tema exato.</p>
+        
+            <button class="demo-tab active" data-tab="boletim" role="tab" aria-selected="true">
+              <h3><span>Boletim &amp; Projeção de Aprovação</span><span class="tab-badge">Meta 24,0</span></h3>
+              <p>Sua média geral comparada à média da sala, matérias já aprovadas, recuperações, anos anteriores e compartilhamento do boletim em PDF.</p>
+            </button>
+            <button class="demo-tab" data-tab="turma" role="tab" aria-selected="false">
+              <h3><span>Canal da Turma &amp; Representantes</span><span class="tab-badge">Sala + Avisos</span></h3>
+              <p>Chat da turma, chat off-topic, avisos oficiais de provas e trabalhos filtráveis e votação contínua para escolher até 3 representantes.</p>
+            </button>
+            <button class="demo-tab" data-tab="ranking" role="tab" aria-selected="false">
+              <h3><span>Ranking &amp; Comparação</span><span class="tab-badge">Opcional e anônimo</span></h3>
+              <p>Compare desempenho na sua turma, no seu curso ou no CTI todo — com controle total para ocultar seu nome ou sua foto quando quiser.</p>
+            </button>
+            <button class="demo-tab" data-tab="frequencia" role="tab" aria-selected="false">
+              <h3><span>Fichas de Avaliação &amp; Frequência</span><span class="tab-badge">PDF em 1 toque</span></h3>
+              <p>Acesse e imprima suas fichas bimestrais em PDF, acompanhe faltas por matéria, atrasos e saídas antecipadas sem sair do app.</p>
+            </button>
+          </div>
+
+          <div class="phone-col">
+            <div class="phone-frame" aria-label="Print real do aplicativo">
+              <img id="phone-shot" class="phone-shot" src="/inicio/shots/boletim_blue_dark.webp" alt="Tela real do aplicativo n²sac" />
+            </div>
+            <div class="phone-theme-caption" id="phone-theme-caption">
+              Tema atual: Técnico em Informática (TI) • Escuro
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- THEME GALLERY: REAL SCREENSHOT FOR EVERY THEME -->
+      <section id="temas" class="reveal">
+        <div class="sec-head">
+          <span class="sec-tag">Cores adaptativas</span>
+          <h2>Um visual para cada curso — clique para expandir o tema na tela toda.</h2>
+          <p>Cada miniatura abaixo é um print real do app. Clique em qualquer uma para ver a onda circular de cores transformar toda a página e o celular acima.</p>
+        </div>
+
+        <div class="theme-gallery stagger-grid" id="theme-gallery"></div>
+      </section>
+
+      <!-- SEPARATOR 2: AOSP GEOMETRIC SHAPE MORPH MARQUEE -->
+      <div class="aosp-sep-bleed" data-aosp-separator="2" aria-hidden="true">
+        <div class="aosp-sep-entry">
+          <div class="aosp-marquee-track"></div>
+        </div>
+      </div>
+
+      <!-- BENTO REAL FEATURES -->
+      <section id="recursos" class="reveal">
+        <div class="sec-head">
+          <span class="sec-tag">Tudo o que o app oferece</span>
+          <h2>Feito sob medida para a rotina de quem estuda no CTI.</h2>
+          <p>Sem enrolação: só recursos que realmente ajudam durante os bimestres, provas e fechamento de notas.</p>
+        </div>
+
+        <div class="bento stagger-grid">
+          <article class="bento-card span-2">
+            <div class="bento-ico">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <h3>Alertas de Novas Notas &amp; Resumo ao Voltar</h3>
+            <p>
+              Receba uma notificação no celular quando uma nova nota ou recuperação for lançada no seu boletim. E se várias notas saírem enquanto você estava fora, o app mostra um resumo comemorativo especial (com animação dedicada quando você tira 10,0!).
+            </p>
+          </article>
+
+          <article class="bento-card">
+            <div class="bento-ico">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <h3>Boletim &amp; Fichas em PDF</h3>
+            <p>Compartilhe seu boletim ou abra as fichas de avaliação de cada bimestre em PDF com um único toque, direto do celular.</p>
+          </article>
+
+          <article class="bento-card">
+            <div class="bento-ico">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            </div>
+            <h3>Faltas, Atrasos e Saídas</h3>
+            <p>Acompanhe suas faltas por matéria, histórico de atrasos e saídas registradas no portal sem precisar ficar caçando menus.</p>
+          </article>
+
+          <article class="bento-card span-2">
+            <div class="bento-ico">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <h3>Canal da Sala, Conversas Privadas &amp; Avisos</h3>
+            <p>
+              Converse no chat oficial da turma ou no off-topic, mande mensagens privadas para amigos com respostas, reações e GIFs, e receba avisos de provas e trabalhos publicados pelos representantes eleitos pela sala.
+            </p>
+          </article>
+
+          <article class="bento-card">
+            <div class="bento-ico">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <h3>Ranking Flexível &amp; Perfil</h3>
+            <p>Personalize seu perfil com foto, banner e conquistas, compare médias com amigos ou ative o modo anônimo instantaneamente.</p>
+          </article>
+
+          <article class="bento-card">
+            <div class="bento-ico">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            <h3>Estúdio de Aparência</h3>
+            <p>Escolha o visual Padrão Grafite ou Material You, modo claro, escuro ou AMOLED, formatos de ícones e layouts de visualização do boletim.</p>
+          </article>
+
+          <article class="bento-card">
+            <div class="bento-ico">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            </div>
+            <h3>Integração com Discord</h3>
+            <p>Vincule sua conta do Discord nas configurações para acompanhar avisos e novidades da sua turma onde você já conversa.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- HUMAN-FRIENDLY PRIVACY & SCHOOL ACCOUNT -->
+      <section id="privacidade" class="reveal">
+        <div class="security-box">
+          <div>
+            <span class="sec-tag">Privacidade &amp; Respeito aos Alunos</span>
+            <h2 style="margin:8px 0 12px; font-family:Outfit,sans-serif; font-size:clamp(1.55rem, 3vw, 2.15rem); font-weight:800; line-height:1.15;">
+              Seus dados escolares pertencem somente a você.
+            </h2>
+            <p style="margin:0; color:var(--muted); font-size:0.95rem;">
+              O <strong>n²sac</strong> é um projeto estudantil independente, gratuito e sem fins lucrativos, aberto apenas para estudantes com conta escolar <strong>@unesp.br</strong>.
+            </p>
+            <ul class="sec-list">
+              <li><span class="check-dot">✓</span><span><strong>Zero anúncios e zero venda de dados:</strong> nada do seu perfil, notas ou mensagens é compartilhado com anunciantes ou terceiros.</span></li>
+              <li><span class="check-dot">✓</span><span><strong>Confirmação opcional com Google (@unesp.br):</strong> se o seu nome aparecer abreviado, você pode confirmá-lo em 1 toque com sua conta escolar do Google — o app lê apenas seu nome e e-mail institucional, sem nunca acessar seu Gmail, Drive ou arquivos.</span></li>
+              <li><span class="check-dot">✓</span><span><strong>Você no controle:</strong> participe do ranking ou fique anônimo quando quiser, gerencie notificações e solicite a exclusão da conta a qualquer momento.</span></li>
+            </ul>
+            <div style="margin-top:22px; display:flex; gap:10px; flex-wrap:wrap;">
+              <a class="btn btn-primary btn-sm" href="/privacidade">Ler Política de Privacidade</a>
+              <a class="btn btn-secondary btn-sm" href="https://github.com/criperrr/n2sac" target="_blank" rel="noopener">GitHub • n2sac</a>
+              <a class="btn btn-secondary btn-sm" href="https://github.com/criperrr/n2sac-front" target="_blank" rel="noopener">GitHub • n2sac-front</a>
+            </div>
+          </div>
+
+          <div class="trust-panel">
+            <div class="trust-row">
+              <span class="check-dot">1</span>
+              <div><strong>Código Aberto (Open Source)</strong>Qualquer estudante pode auditar o código-fonte completo em <a href="https://github.com/criperrr/n2sac" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:none;">criperrr/n2sac</a> e <a href="https://github.com/criperrr/n2sac-front" target="_blank" rel="noopener" style="color:var(--primary);font-weight:600;text-decoration:none;">criperrr/n2sac-front</a>.</div>
+            </div>
+            <div class="trust-row">
+              <span class="check-dot">2</span>
+              <div><strong>Acesso restrito à escola</strong>Apenas alunos com conta institucional @unesp.br entram no app e nos canais de turma.</div>
+            </div>
+            <div class="trust-row">
+              <span class="check-dot">3</span>
+              <div><strong>Privacidade no Ranking</strong>Você decide se quer aparecer, ocultar seu nome ou esconder sua foto a qualquer momento.</div>
+            </div>
+            <div class="trust-row">
+              <span class="check-dot">4</span>
+              <div><strong>Contato direto</strong>Dúvidas ou pedidos sobre seus dados? Escreva para <strong>gabriel.camaforte.s@gmail.com</strong> ou use o menu Ajuda dentro do app.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ -->
+      <section id="faq" class="reveal">
+        <div class="sec-head">
+          <span class="sec-tag">Perguntas frequentes</span>
+          <h2>Dúvidas rápidas sobre o n²sac.</h2>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item" open>
+            <summary>Quem pode entrar no n²sac? <span>+</span></summary>
+            <p>Estudantes do Colégio Técnico Industrial (CTI — UNESP Bauru) dos cursos de Técnico em Informática (TI), Técnico em Mecânica e Técnico em Eletrônica com acesso ativo ao NSAC Online (@unesp.br).</p>
+          </details>
+          <details class="faq-item">
+            <summary>O n²sac é oficial da UNESP? <span>+</span></summary>
+            <p>Não. É um aplicativo independente feito por estudantes do próprio CTI para deixar o acompanhamento das notas, faltas e recados da turma muito mais prático no dia a dia.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Preciso baixar o aplicativo no Android ou posso usar no navegador? <span>+</span></summary>
+            <p>Os dois! Você pode abrir direto pelo navegador no computador, iPhone ou Android em qualquer lugar, ou baixar o aplicativo oficial de Android para receber notificações instantâneas de novas notas.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Para que serve o botão de confirmar nome com o Google no perfil? <span>+</span></summary>
+            <p>Alguns e-mails escolares são abreviados. Confirmar com sua conta Google @unesp.br preenche automaticamente seu nome completo com acentos para o ranking e para as eleições de representantes da sua turma.</p>
+          </details>
+        </div>
+      </section>
+
+      <!-- FINAL CTA -->
+      <section class="cta-banner reveal">
+        <div>
+          <h2>Acompanhe seu bimestre com muito mais clareza.</h2>
+          <p>Entre agora com sua conta escolar @unesp.br na versão Web ou baixe o app para Android.</p>
+        </div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <a class="btn btn-primary" href="/">Entrar no n²sac</a>
+          <a class="btn btn-secondary" href="https://github.com/criperrr/n2sac/releases/latest" target="_blank" rel="noopener">Baixar APK Android</a>
+        </div>
+      </section>
+
+      <footer>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <strong>n²sac</strong>
+          <span>• CTI Colégio Técnico Industrial (UNESP Bauru)<br>• Feito por Gabriel C.</span>
+        </div>
+        <div style="display:flex; gap:18px; flex-wrap:wrap;">
+          <a href="/">Abrir aplicativo</a>
+          <a href="/privacidade">Política de Privacidade</a>
+          <a href="https://github.com/criperrr/n2sac" target="_blank" rel="noopener">GitHub (n2sac)</a>
+          <a href="https://github.com/criperrr/n2sac-front" target="_blank" rel="noopener">GitHub (n2sac-front)</a>
+          <a href="mailto:gabriel.camaforte.s@gmail.com">Contato</a>
+        </div>
+      </footer>
+    </main>
+
+    <script>
+      (function () {
+        const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // =========================================================================
+        // 1. MONET PALETTES + REAL SCREENSHOT SWITCHING + CIRCULAR EXPAND WIPE
+        // =========================================================================
+        const PALETTES = {
+          gray: {
+            label: 'Padrão Grafite', course: 'Editorial', swatch: '#9e9e9e',
+            dark:  { bg:'#111214', surface:'#181a1e', high:'#22252b', glass:'rgba(24,26,30,0.78)', text:'#eef0f4', muted:'#9ea4b0', primary:'#e0e0e0', onPrimary:'#111214', pCtr:'rgba(224,224,224,0.13)', sec:'#616161', ter:'#9e9e9e', seal:'#e0e0e0', orb1:'#9e9e9e', orb2:'#616161', g1:'rgba(224,224,224,0.14)', g2:'rgba(158,158,158,0.12)' },
+            light: { bg:'#f4f5f7', surface:'#ffffff', high:'#e9ecf0', glass:'rgba(255,255,255,0.86)', text:'#181a1f', muted:'#5c6270', primary:'#2d3138', onPrimary:'#ffffff', pCtr:'#e4e7ec', sec:'#8a909e', ter:'#6e7582', seal:'#5c6370', orb1:'#aeb5c2', orb2:'#cfd5e0', g1:'rgba(45,49,56,0.06)', g2:'rgba(110,117,130,0.06)' },
+          },
+          blue: {
+            label: 'Técnico em Informática (TI)', course: 'Azul TI', swatch: '#3B82F6',
+            dark:  { bg:'#111318', surface:'#181b22', high:'#212632', glass:'rgba(24,27,34,0.78)', text:'#e2e2e9', muted:'#9aa2b6', primary:'#adc6ff', onPrimary:'#0f254f', pCtr:'rgba(173,198,255,0.14)', sec:'#bfc6dc', ter:'#debcdf', seal:'#adc6ff', orb1:'#debcdf', orb2:'#bfc6dc', g1:'rgba(173,198,255,0.22)', g2:'rgba(222,188,223,0.16)' },
+            light: { bg:'#f4f7ff', surface:'#ffffff', high:'#e8eefc', glass:'rgba(255,255,255,0.86)', text:'#171b26', muted:'#525c73', primary:'#355ca8', onPrimary:'#ffffff', pCtr:'#dbe6ff', sec:'#6b7ba4', ter:'#8b6b96', seal:'#5a8dee', orb1:'#cfa7e8', orb2:'#93b8ff', g1:'rgba(53,92,168,0.10)', g2:'rgba(139,107,150,0.08)' },
+          },
+          green: {
+            label: 'Técnico em Mecânica', course: 'Esmeralda MEC', swatch: '#10B981',
+            dark:  { bg:'#0f1511', surface:'#161e19', high:'#202b24', glass:'rgba(22,30,25,0.78)', text:'#dee4de', muted:'#96a89c', primary:'#8ed5b0', onPrimary:'#003824', pCtr:'rgba(142,213,176,0.14)', sec:'#b4ccbd', ter:'#a5cdde', seal:'#8ed5b0', orb1:'#a5cdde', orb2:'#b4ccbd', g1:'rgba(142,213,176,0.20)', g2:'rgba(165,205,222,0.16)' },
+            light: { bg:'#f2faf5', surface:'#ffffff', high:'#e3f2e9', glass:'rgba(255,255,255,0.86)', text:'#141f18', muted:'#466153', primary:'#1d6b4c', onPrimary:'#ffffff', pCtr:'#c7f0d8', sec:'#5e8573', ter:'#4e7d8f', seal:'#34a875', orb1:'#7ecce0', orb2:'#83deb2', g1:'rgba(29,107,76,0.10)', g2:'rgba(78,125,143,0.08)' },
+          },
+          amber: {
+            label: 'Técnico em Eletrônica', course: 'Âmbar ELE', swatch: '#F59E0B',
+            dark:  { bg:'#18120c', surface:'#221a12', high:'#2e2419', glass:'rgba(34,26,18,0.78)', text:'#eee0d4', muted:'#b6a28f', primary:'#f8bb71', onPrimary:'#472a00', pCtr:'rgba(248,187,113,0.14)', sec:'#dfc2a2', ter:'#bbcd9e', seal:'#f8bb71', orb1:'#bbcd9e', orb2:'#dfc2a2', g1:'rgba(248,187,113,0.20)', g2:'rgba(187,205,158,0.15)' },
+            light: { bg:'#fff8f1', surface:'#ffffff', high:'#f8ece0', glass:'rgba(255,255,255,0.88)', text:'#241a10', muted:'#6e5842', primary:'#8a560e', onPrimary:'#ffffff', pCtr:'#ffe0ba', sec:'#9e7a56', ter:'#6c804e', seal:'#eba03b', orb1:'#b8d48c', orb2:'#f7c483', g1:'rgba(138,86,14,0.10)', g2:'rgba(108,128,78,0.08)' },
+          },
+          purple: {
+            label: 'Exemplo; adapta-se ao seu celular', course: 'Material You', swatch: '#7C4DFF',
+            dark:  { bg:'#141318', surface:'#1c1a22', high:'#26232e', glass:'rgba(28,26,34,0.78)', text:'#e6e1e9', muted:'#a89fb6', primary:'#cdbdff', onPrimary:'#342461', pCtr:'rgba(205,189,255,0.14)', sec:'#cbc3dc', ter:'#eeb8ca', seal:'#cdbdff', orb1:'#eeb8ca', orb2:'#cbc3dc', g1:'rgba(205,189,255,0.22)', g2:'rgba(238,184,202,0.16)' },
+            light: { bg:'#faf5ff', surface:'#ffffff', high:'#efe6fa', glass:'rgba(255,255,255,0.86)', text:'#1c1824', muted:'#5d5470', primary:'#624ca0', onPrimary:'#ffffff', pCtr:'#e6dcff', sec:'#8274a3', ter:'#9e6379', seal:'#856ae0', orb1:'#efa3bf', orb2:'#bdaaf7', g1:'rgba(98,76,160,0.10)', g2:'rgba(158,99,121,0.08)' },
+          },
+          coral: {
+            label: 'Exemplo; adapta-se ao seu celular', course: 'Material You', swatch: '#EF4444',
+            dark:  { bg:'#1a1111', surface:'#241818', high:'#302121', glass:'rgba(36,24,24,0.78)', text:'#f1dedd', muted:'#b79e9c', primary:'#ffb3ad', onPrimary:'#571e1b', pCtr:'rgba(255,179,173,0.14)', sec:'#e7bdb9', ter:'#e1c28c', seal:'#ffb3ad', orb1:'#e1c28c', orb2:'#e7bdb9', g1:'rgba(255,179,173,0.20)', g2:'rgba(225,194,140,0.15)' },
+            light: { bg:'#fff6f5', surface:'#ffffff', high:'#fbe8e6', glass:'rgba(255,255,255,0.88)', text:'#241717', muted:'#735452', primary:'#9c423e', onPrimary:'#ffffff', pCtr:'#ffd9d6', sec:'#a3716e', ter:'#947743', seal:'#e66b63', orb1:'#ebca88', orb2:'#f5a6a0', g1:'rgba(156,66,62,0.10)', g2:'rgba(148,119,67,0.08)' },
+          },
+        };
+
+        const LANDING_THEME_KEY = 'n2sac_landing_theme_v1';
+        let currentPal = 'blue';
+        let currentMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        try {
+          const saved = JSON.parse(localStorage.getItem(LANDING_THEME_KEY) || 'null');
+          if (saved && PALETTES[saved.pal]) currentPal = saved.pal;
+          if (saved && (saved.mode === 'dark' || saved.mode === 'light')) currentMode = saved.mode;
+        } catch {}
+        let currentTab = 'boletim';
+
+        function applyThemeDOM() {
+          const pal = PALETTES[currentPal];
+          const t = pal[currentMode];
+          const r = document.documentElement.style;
+          const isLight = currentMode === 'light';
+          r.setProperty('--bg', t.bg);
+          r.setProperty('--surface', t.surface);
+          r.setProperty('--surface-high', t.high);
+          r.setProperty('--surface-glass', t.glass);
+          r.setProperty('--border', isLight ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.09)');
+          r.setProperty('--border-strong', isLight ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.16)');
+          r.setProperty('--text', t.text);
+          r.setProperty('--muted', t.muted);
+          r.setProperty('--primary', t.primary);
+          r.setProperty('--on-primary', t.onPrimary);
+          r.setProperty('--primary-container', t.pCtr);
+          r.setProperty('--secondary', t.sec);
+          r.setProperty('--tertiary', t.ter);
+          r.setProperty('--logo-seal', t.seal);
+          r.setProperty('--logo-orb1', t.orb1);
+          r.setProperty('--logo-orb2', t.orb2);
+          r.setProperty('--logo-text', t.text);
+          r.setProperty('--logo-blend', isLight ? 'multiply' : 'screen');
+          r.setProperty('--glow-1', t.g1);
+          r.setProperty('--glow-2', t.g2);
+          r.setProperty('--shadow-xl', isLight ? '0 22px 60px -20px rgba(15, 23, 42, 0.14)' : '0 30px 90px -20px rgba(0, 0, 0, 0.62)');
+
+          document.getElementById('meta-theme-color')?.setAttribute('content', t.bg);
+          document.getElementById('mode-toggle').textContent = isLight ? '☾' : '☀';
+          document.querySelectorAll('.swatch-btn').forEach(b => b.classList.toggle('active', b.dataset.pal === currentPal));
+          document.querySelectorAll('.theme-card').forEach(c => {
+            c.classList.toggle('active', c.dataset.pal === currentPal);
+            const img = c.querySelector('img');
+            if (img) img.src = `/inicio/shots/boletim_${c.dataset.pal}_${currentMode}.webp`;
+          });
+          updatePhoneShot(false);
+        }
+
+        function updatePhoneShot(animate) {
+          const img = document.getElementById('phone-shot');
+          const cap = document.getElementById('phone-theme-caption');
+          const targetSrc = `/inicio/shots/${currentTab}_${currentPal}_${currentMode}.webp`;
+          const pal = PALETTES[currentPal];
+          if (cap) cap.textContent = `Print real • ${pal.label} • ${currentMode === 'dark' ? 'Escuro' : 'Claro'}`;
+          if (!img) return;
+          if (animate && img.getAttribute('src') !== targetSrc) {
+            img.classList.add('swapping');
+            const pre = new Image();
+            pre.onload = () => {
+              img.src = targetSrc;
+              requestAnimationFrame(() => img.classList.remove('swapping'));
+            };
+            pre.src = targetSrc;
+          } else {
+            img.src = targetSrc;
+          }
+        }
+
+        // Circular Expanding Reveal Transition from clicked button center!
+        function switchThemeWithCircle(nextPal, nextMode, originEl, ev) {
+          if (nextPal === currentPal && nextMode === currentMode) return;
+          let x = window.innerWidth / 2;
+          let y = 40;
+          if (ev && typeof ev.clientX === 'number' && ev.clientX > 0) {
+            x = ev.clientX;
+            y = ev.clientY;
+          } else if (originEl) {
+            const rect = originEl.getBoundingClientRect();
+            x = rect.left + rect.width / 2;
+            y = rect.top + rect.height / 2;
+          }
+          const maxR = Math.hypot(
+            Math.max(x, window.innerWidth - x),
+            Math.max(y, window.innerHeight - y)
+          );
+
+          const commit = () => {
+            currentPal = nextPal;
+            currentMode = nextMode;
+            try {
+              localStorage.setItem(LANDING_THEME_KEY, JSON.stringify({ pal: currentPal, mode: currentMode }));
+            } catch {}
+            applyThemeDOM();
+          };
+
+          document.documentElement.style.setProperty('--vt-x', x + 'px');
+          document.documentElement.style.setProperty('--vt-y', y + 'px');
+          if (!reducedMotion && typeof document.startViewTransition === 'function') {
+            const vt = document.startViewTransition(commit);
+            vt.ready.then(() => {
+              document.documentElement.animate(
+                {
+                  clipPath: [
+                    `circle(0px at ${x}px ${y}px)`,
+                    `circle(${maxR.toFixed(0)}px at ${x}px ${y}px)`,
+                  ],
+                },
+                {
+                  duration: 620,
+                  easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                  pseudoElement: '::view-transition-new(root)',
+                  fill: 'both',
+                }
+              );
+            }).catch(() => {});
+          } else {
+            commit();
+          }
+        }
+
+        // Populate Monet Swatches + Theme Gallery Cards (each with its real screenshot!)
+        const monetBar = document.getElementById('monet-bar');
+        const gallery = document.getElementById('theme-gallery');
+        Object.entries(PALETTES).forEach(([key, pal]) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'swatch-btn';
+          btn.dataset.pal = key;
+          btn.style.background = pal.swatch;
+          btn.title = pal.label;
+          btn.setAttribute('aria-label', 'Tema ' + pal.label);
+          btn.onclick = (ev) => switchThemeWithCircle(key, currentMode, btn, ev);
+          monetBar.appendChild(btn);
+
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'theme-card';
+          card.dataset.pal = key;
+          card.innerHTML = `
+            <img src="/inicio/shots/boletim_${key}_${currentMode}.webp" alt="Print real do tema ${pal.label}" loading="lazy" />
+            <div class="theme-card-title">${pal.course}</div>
+            <div class="theme-card-sub">${pal.label}</div>
+          `;
+          card.onclick = (ev) => switchThemeWithCircle(key, currentMode, card, ev);
+          gallery.appendChild(card);
+        });
+
+        document.getElementById('mode-toggle').onclick = (ev) => {
+          switchThemeWithCircle(currentPal, currentMode === 'dark' ? 'light' : 'dark', ev.currentTarget, ev);
+        };
+        applyThemeDOM();
+
+        // Phone tabs
+        document.querySelectorAll('.demo-tab').forEach(tab => {
+          tab.onclick = () => {
+            currentTab = tab.dataset.tab;
+            document.querySelectorAll('.demo-tab').forEach(t => {
+              const act = t === tab;
+              t.classList.toggle('active', act);
+              t.setAttribute('aria-selected', String(act));
+            });
+            updatePhoneShot(true);
+          };
+        });
+
+        // =========================================================================
+        // 2. INTERACTIVE HERO LOGO: SPIN BY DRAG / CLICK UNTIL MOTOR EXPLODES!
+        // =========================================================================
+        const stage = document.getElementById('hero-stage');
+        const hitbox = document.getElementById('hero-logo-hitbox');
+        const heroSvg = document.getElementById('hero-logo-svg');
+        const hOrb1 = document.getElementById('hero-logo-orb1');
+        const hOrb2 = document.getElementById('hero-logo-orb2');
+        const hSeal = document.getElementById('hero-logo-seal');
+        const rpmFill = document.getElementById('rpm-bar-fill');
+        const spinCap = document.getElementById('spin-caption');
+        const sparkLayer = document.getElementById('spark-layer');
+        const shockwave = document.getElementById('shockwave');
+
+        const EXPLODE_DPS = 10800; // 1800 RPM redline!
+        const IDLE_OMEGA = 22;     // Gentle idle spin
+        let ang1 = 0, ang2 = 0, angS = 0;
+        let omega = IDLE_OMEGA;
+        let dragging = false;
+        let dragMoved = false;
+        let lastAngleRad = 0;
+        let lastDragTime = 0;
+        let motorDead = false;
+        let deadTimer = 0;
+        let lastFrameTs = 0;
+        let heroRafId = 0;
+
+        function wakeHeroPhysics() {
+          if (heroRafId || reducedMotion) return;
+          lastFrameTs = performance.now();
+          heroRafId = requestAnimationFrame(tickHeroPhysics);
+        }
+
+        function pointerAngle(ev) {
+          const rect = hitbox.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top + rect.height / 2;
+          return Math.atan2(ev.clientY - cy, ev.clientX - cx);
+        }
+
+        function spawnExplosionSparks() {
+          shockwave.classList.remove('boom');
+          void shockwave.offsetWidth;
+          shockwave.classList.add('boom');
+          stage.classList.remove('exploded');
+          void stage.offsetWidth;
+          stage.classList.add('exploded');
+
+          const colors = ['var(--primary)', 'var(--tertiary)', 'var(--secondary)', '#ff6b6b', '#fbbf24'];
+          for (let i = 0; i < 24; i++) {
+            const el = document.createElement('span');
+            const size = 7 + Math.random() * 11;
+            const angle = (Math.PI * 2 * i) / 24 + (Math.random() - 0.5) * 0.25;
+            const dist = 120 + Math.random() * 130;
+            el.style.cssText = `
+              position:absolute; left:50%; top:50%;
+              width:${size}px; height:${size}px;
+              margin:${-size/2}px 0 0 ${-size/2}px;
+              border-radius:${i % 2 === 0 ? '50%' : '3px'};
+              background:${colors[i % colors.length]};
+              pointer-events:none;
+            `;
+            sparkLayer.appendChild(el);
+            el.animate([
+              { transform: 'translate3d(0,0,0) scale(1.2) rotate(0deg)', opacity: 1 },
+              { transform: `translate3d(${(Math.cos(angle)*dist).toFixed(1)}px, ${(Math.sin(angle)*dist).toFixed(1)}px, 0) scale(0.1) rotate(${(Math.random()*360).toFixed(0)}deg)`, opacity: 0 }
+            ], { duration: 680 + Math.random() * 280, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'forwards' })
+              .onfinish = () => el.remove();
+          }
+        }
+
+        function triggerMotorExplosion() {
+          motorDead = true;
+          deadTimer = 2.6;
+          omega = Math.sign(omega || 1) * 950;
+          stage.classList.remove('overheating');
+          heroSvg.style.filter = '';
+          heroSvg.style.transform = '';
+          lastFilter = '';
+          spawnExplosionSparks();
+          setCap('explodiu!');
+          spinCap.classList.add('hot');
+        }
+
+        hitbox.addEventListener('pointerdown', (ev) => {
+          if (motorDead) return;
+          dragging = true;
+          dragMoved = false;
+          hitbox.setPointerCapture(ev.pointerId);
+          lastAngleRad = pointerAngle(ev);
+          lastDragTime = performance.now();
+          wakeHeroPhysics();
+        });
+
+        hitbox.addEventListener('pointermove', (ev) => {
+          if (!dragging || motorDead) return;
+          const now = performance.now();
+          const a = pointerAngle(ev);
+          let delta = a - lastAngleRad;
+          if (delta > Math.PI) delta -= Math.PI * 2;
+          if (delta < -Math.PI) delta += Math.PI * 2;
+          if (Math.abs(delta) > 0.015) dragMoved = true;
+
+          const degDelta = (delta * 180) / Math.PI;
+          const dt = Math.max(0.008, (now - lastDragTime) / 1000);
+          ang1 += degDelta;
+          ang2 -= degDelta * 0.78;
+          angS += degDelta * 0.42;
+          // Feed real angular momentum from finger/mouse flick!
+          omega = omega * 0.62 + (degDelta / dt) * 0.92;
+          lastAngleRad = a;
+          lastDragTime = now;
+        });
+
+        function endDrag() {
+          if (!dragging) return;
+          dragging = false;
+          if (!dragMoved && !motorDead) {
+            // Gentle progressive tap / click impulse: builds smoothly with repeated clicks
+            const dir = omega < -20 ? -1 : 1;
+            const boost = 190 + Math.min(480, Math.abs(omega) * 0.14);
+            omega += dir * boost;
+            heroSvg.animate([
+              { transform: 'scale(0.94)' },
+              { transform: 'scale(1.04)' },
+              { transform: 'scale(1)' }
+            ], { duration: 200, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' });
+          }
+        }
+        hitbox.addEventListener('pointerup', endDrag);
+        hitbox.addEventListener('pointercancel', endDrag);
+
+        let heroInView = true;
+        let lastCapText = 'clique';
+        let lastFilter = '';
+        let lastRpmScale = -1;
+        if ('IntersectionObserver' in window) {
+          new IntersectionObserver((entries) => {
+            heroInView = entries[0]?.isIntersecting ?? true;
+            if (heroInView) wakeHeroPhysics();
+          }, { threshold: 0.05 }).observe(stage);
+        }
+
+        function setRpmBar(val) {
+          const v = Math.round(val * 200) / 200;
+          if (v !== lastRpmScale) {
+            lastRpmScale = v;
+            rpmFill.style.transform = `scaleX(${v.toFixed(3)})`;
+          }
+        }
+        function setCap(txt) {
+          if (txt !== lastCapText) {
+            lastCapText = txt;
+            spinCap.textContent = txt;
+          }
+        }
+
+        function tickHeroPhysics(now) {
+          heroRafId = 0;
+          if (!heroInView) return;
+          const dt = Math.min(0.05, (now - lastFrameTs) / 1000);
+          lastFrameTs = now;
+
+          if (motorDead) {
+            omega *= Math.pow(0.08, dt);
+            if (Math.abs(omega) < 6) omega = 0;
+            deadTimer -= dt;
+            setRpmBar(Math.max(0, deadTimer / 2.6));
+            if (deadTimer <= 0) {
+              motorDead = false;
+              spinCap.classList.remove('hot');
+              setCap('clique');
+              setRpmBar(0);
+            }
+          } else {
+            const absW = Math.abs(omega);
+            if (absW >= EXPLODE_DPS) {
+              triggerMotorExplosion();
+            } else {
+              if (!dragging) {
+                if (absW < IDLE_OMEGA) {
+                  // Smoothly ease back up from 0 -> IDLE_OMEGA after explosion recovery
+                  const target = Math.sign(omega || 1) * IDLE_OMEGA;
+                  omega += (target - omega) * Math.min(1, dt * 3.5);
+                } else {
+                  const damping = absW > 400 ? 0.68 : 0.72;
+                  omega *= Math.pow(damping, dt);
+                }
+              }
+              const activeRatio = Math.max(0, (Math.abs(omega) - IDLE_OMEGA) / (EXPLODE_DPS - IDLE_OMEGA));
+              setRpmBar(activeRatio);
+
+              const hot = activeRatio > 0.68;
+              stage.classList.toggle('overheating', hot);
+              spinCap.classList.toggle('hot', hot);
+              setCap(activeRatio > 0.025 ? 'continue!' : 'clique');
+
+              const nextFilter = activeRatio > 0.02
+                ? `hue-rotate(${(activeRatio * 165).toFixed(0)}deg) saturate(${(1 + activeRatio * 1.15).toFixed(2)}) brightness(${(1 + activeRatio * 0.22).toFixed(2)})`
+                : '';
+              if (nextFilter !== lastFilter) {
+                lastFilter = nextFilter;
+                heroSvg.style.filter = nextFilter;
+              }
+
+              if (activeRatio > 0.45 && !reducedMotion) {
+                const jitter = (activeRatio - 0.45) * 9;
+                const jx = (Math.random() - 0.5) * jitter;
+                const jy = (Math.random() - 0.5) * jitter;
+                const sc = 1 - activeRatio * 0.08;
+                heroSvg.style.transform = `translate3d(${jx.toFixed(1)}px, ${jy.toFixed(1)}px, 0) scale(${sc.toFixed(3)})`;
+              } else {
+                heroSvg.style.transform = '';
+              }
+            }
+          }
+
+          if (!reducedMotion && omega !== 0) {
+            ang1 += omega * dt;
+            ang2 += -omega * 0.78 * dt;
+            angS += omega * 0.42 * dt;
+            hOrb1.style.transform = `rotate(${ang1.toFixed(2)}deg)`;
+            hOrb2.style.transform = `rotate(${ang2.toFixed(2)}deg)`;
+            hSeal.style.transform = `rotate(${angS.toFixed(2)}deg)`;
+          }
+          if (heroInView) {
+            heroRafId = requestAnimationFrame(tickHeroPhysics);
+          }
+        }
+        wakeHeroPhysics();
+
+        // =========================================================================
+        // 3. EXACT AOSP GEOMETRIC SHAPE MORPH MARQUEE (17 shapes, ultra-low CPU)
+        // =========================================================================
+        const SAMPLES = 48; // 2.5x lighter tessellation, visually identical at 52px
+        const TAU = Math.PI * 2;
+        const MORPH_MS = 520;
+        const ROTATION_PERIOD_MS = 3600;
+
+        function rayToPolygon(vertices, theta) {
+          const dx = Math.cos(theta), dy = Math.sin(theta);
+          let best = Infinity;
+          for (let i = 0; i < vertices.length; i++) {
+            const [ax, ay] = vertices[i];
+            const [bx, by] = vertices[(i + 1) % vertices.length];
+            const ex = bx - ax, ey = by - ay;
+            const denom = dx * ey - dy * ex;
+            if (Math.abs(denom) < 1e-9) continue;
+            const t = (ax * ey - ay * ex) / denom;
+            const u = (ax * dy - ay * dx) / denom;
+            if (t > 0 && u >= -1e-9 && u <= 1 + 1e-9) best = Math.min(best, t);
+          }
+          return best === Infinity ? 1 : best;
+        }
+        function smoothRadii(radii, win) {
+          const half = Math.floor(win / 2);
+          return radii.map((_, i) => {
+            let sum = 0;
+            for (let k = -half; k <= half; k++) sum += radii[(i + k + radii.length) % radii.length];
+            return sum / (2 * half + 1);
+          });
+        }
+        function normalizeRadii(r) {
+          const m = Math.max(...r);
+          return r.map(v => v / m);
+        }
+        function sampleFn(fn) {
+          return Array.from({ length: SAMPLES }, (_, i) => fn((i / SAMPLES) * TAU - Math.PI / 2));
+        }
+        function starPoly(pts, inner) {
+          const v = [];
+          for (let i = 0; i < pts * 2; i++) {
+            const r = i % 2 === 0 ? 1 : inner;
+            const a = -Math.PI / 2 + (i * Math.PI) / pts;
+            v.push([r * Math.cos(a), r * Math.sin(a)]);
+          }
+          return v;
+        }
+        function regPoly(sides, rot = -Math.PI / 2) {
+          return Array.from({ length: sides }, (_, i) => {
+            const a = rot + (i * TAU) / sides;
+            return [Math.cos(a), Math.sin(a)];
+          });
+        }
+        function capsuleFn(theta, halfSpan, radius) {
+          const c = Math.abs(Math.cos(theta)), s = Math.abs(Math.sin(theta));
+          if (s > 1e-6 && (radius / s) * c <= halfSpan) return radius / s;
+          return halfSpan * c + Math.sqrt(Math.max(0, radius * radius - halfSpan * halfSpan * s * s));
+        }
+        function ellipseFn(theta, a, b) {
+          return (a * b) / Math.sqrt((b * Math.cos(theta)) ** 2 + (a * Math.sin(theta)) ** 2);
+        }
+        function superellipseFn(theta, n) {
+          return Math.pow(Math.pow(Math.abs(Math.cos(theta)), n) + Math.pow(Math.abs(Math.sin(theta)), n), -1 / n);
+        }
+        const fromPoly = (verts, rnd) => normalizeRadii(smoothRadii(sampleFn(t => rayToPolygon(verts, t)), rnd));
+
+        // 17 AOSP Material 3 Expressive geometric shapes (original 7 + 10 new!)
+        const AOSP_SHAPES = [
+          fromPoly(starPoly(10, 0.72), 3),                                              // 1. soft burst
+          normalizeRadii(sampleFn(t => 1 + 0.085 * Math.cos(9 * (t + Math.PI / 2)))),   // 2. 9-sided cookie
+          fromPoly(regPoly(5), 7),                                                      // 3. rounded pentagon
+          normalizeRadii(sampleFn(t => capsuleFn(t + Math.PI / 4, 0.42, 0.58))),        // 4. diagonal pill
+          fromPoly(starPoly(8, 0.84), 3),                                               // 5. sunny
+          normalizeRadii(sampleFn(t => 1 + 0.14 * Math.cos(4 * (t + Math.PI / 2)))),    // 6. 4-sided cookie
+          normalizeRadii(sampleFn(t => ellipseFn(t + Math.PI / 4, 1, 0.68))),           // 7. diagonal oval
+          normalizeRadii(sampleFn(t => 0.78 + 0.22 * Math.cos(4 * t))),                 // 8. 4-leaf clover
+          normalizeRadii(sampleFn(t => superellipseFn(t, 4.2))),                        // 9. squircle
+          fromPoly(regPoly(3), 7),                                                      // 10. rounded triangle
+          fromPoly(regPoly(6), 5),                                                      // 11. rounded hexagon
+          fromPoly(regPoly(4, 0), 5),                                                   // 12. rounded diamond
+          normalizeRadii(sampleFn(t => 1 + 0.13 * Math.cos(6 * (t + Math.PI / 2)))),    // 13. 6-petal flower
+          fromPoly(starPoly(6, 0.70), 3),                                               // 14. 6-point rounded star
+          normalizeRadii(sampleFn(t => 1 + 0.15 * Math.cos(3 * (t + Math.PI / 2)))),    // 15. 3-lobe trefoil
+          normalizeRadii(sampleFn(t => 1 + 0.075 * Math.cos(12 * (t + Math.PI / 2)))),  // 16. 12-lobe M3 seal
+          fromPoly(starPoly(14, 0.80), 2),                                              // 17. 14-point starburst
+        ];
+
+        function toPath(radii, cx, sc) {
+          let d = '';
+          for (let i = 0; i < radii.length; i++) {
+            const theta = (i / radii.length) * TAU - Math.PI / 2;
+            const r = radii[i] * sc;
+            d += `${i === 0 ? 'M' : 'L'}${(cx + r * Math.cos(theta)).toFixed(1)} ${(cx + r * Math.sin(theta)).toFixed(1)}`;
+          }
+          return d + 'Z';
+        }
+        function springEase(x) {
+          const c = 1.35, p = x - 1;
+          return 1 + (c + 1) * p * p * p + c * p * p;
+        }
+        const AOSP_PATHS = AOSP_SHAPES.map(r => toPath(r, 50, 44));
+        const MORPH_EASING = `linear(${Array.from({ length: 21 }, (_, i) => springEase(i / 20).toFixed(3)).join(', ')})`;
+        const SUPPORTS_CSS_D = typeof CSS !== 'undefined' && CSS.supports('d', 'path("M0 0L1 1Z")') && CSS.supports('animation-timing-function', 'linear(0, 1)');
+
+        function nextRandomIdx(curr, count) {
+          const n = Math.floor(Math.random() * (count - 1));
+          return n >= curr ? n + 1 : n;
+        }
+
+        const SHAPE_FILLS = ['var(--primary)', 'var(--tertiary)', 'var(--secondary)'];
+
+        function initAospSeparator(sepEl, cruiseSpeedPxPerSec, direction) {
+          const entry = sepEl.querySelector('.aosp-sep-entry');
+          const track = sepEl.querySelector('.aosp-marquee-track');
+          const ITEM_COUNT = 30; // 30 * 70px = 2100px per half (>1920px wide, zero empty edge gap!)
+          const items = [];
+
+          function triggerSingleMorph(state) {
+            const nextIdx = nextRandomIdx(state.idx, AOSP_PATHS.length);
+            const fromD = AOSP_PATHS[state.idx];
+            const toD = AOSP_PATHS[nextIdx];
+            state.idx = nextIdx;
+            state.stepTurns += 90;
+
+            if (SUPPORTS_CSS_D && state.pathEl.animate) {
+              try {
+                state.morphAnim = state.pathEl.animate(
+                  [{ d: `path("${fromD}")` }, { d: `path("${toD}")` }],
+                  { duration: MORPH_MS, easing: MORPH_EASING, fill: 'forwards' }
+                );
+                state.gEl.animate(
+                  [
+                    { transform: `rotate(${state.stepTurns - 90}deg)` },
+                    { transform: `rotate(${state.stepTurns}deg)` },
+                  ],
+                  { duration: MORPH_MS, easing: MORPH_EASING, fill: 'forwards' }
+                );
+                state.morphAnim.onfinish = () => {
+                  state.pathEl.setAttribute('d', toD);
+                };
+                return;
+              } catch {}
+            }
+            state.pathEl.setAttribute('d', toD);
+            state.gEl.style.transition = `transform ${MORPH_MS}ms cubic-bezier(0.34, 1.32, 0.64, 1)`;
+            state.gEl.style.transform = `rotate(${state.stepTurns}deg)`;
+          }
+
+          for (let copy = 0; copy < 2; copy++) {
+            for (let i = 0; i < ITEM_COUNT; i++) {
+              const cell = document.createElement('div');
+              cell.className = 'aosp-shape-item';
+              const startIdx = (i * 3 + copy) % AOSP_PATHS.length;
+              const fillVar = SHAPE_FILLS[i % SHAPE_FILLS.length];
+              cell.innerHTML = `<svg viewBox="0 0 100 100"><g style="transform-origin:50px 50px;"><path d="${AOSP_PATHS[startIdx]}" fill="${fillVar}" /></g></svg>`;
+              track.appendChild(cell);
+
+              const state = {
+                cell,
+                gEl: cell.querySelector('g'),
+                pathEl: cell.querySelector('path'),
+                idx: startIdx,
+                stepTurns: 0,
+                frozen: false,
+                morphAnim: null,
+              };
+
+              cell.addEventListener('mouseenter', () => {
+                sepState.hovered = true;
+                sepEl.classList.add('is-hovering');
+                cell.classList.add('is-focused');
+                state.frozen = true;
+              });
+              cell.addEventListener('mouseleave', () => {
+                sepState.hovered = false;
+                sepEl.classList.remove('is-hovering');
+                cell.classList.remove('is-focused');
+                state.frozen = false;
+              });
+              // Click on hovered figure: spins + morphs ONCE into a new random shape, then stops!
+              cell.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                triggerSingleMorph(state);
+              });
+
+              items.push(state);
+            }
+          }
+
+          const sepState = {
+            hovered: false,
+            started: false,
+            inView: false,
+            offsetX: 0,
+            curSpeed: 0,
+            halfWidth: 0,
+          };
+
+          let sepRafId = 0;
+          let prevTs = 0;
+          function startMarqueeRaf() {
+            if (sepRafId || reducedMotion) return;
+            prevTs = performance.now();
+            sepRafId = requestAnimationFrame(tickMarquee);
+          }
+          function stopMarqueeRaf() {
+            if (sepRafId) {
+              cancelAnimationFrame(sepRafId);
+              sepRafId = 0;
+            }
+          }
+
+          // Strictly start/stop rAF when entering/leaving viewport (0% CPU when off-screen!)
+          const io = new IntersectionObserver((entries) => {
+            const vis = entries[0]?.isIntersecting ?? false;
+            sepState.inView = vis;
+            if (vis) {
+              if (!sepState.started) {
+                sepState.started = true;
+                entry.classList.add('entered');
+                sepState.curSpeed = direction * 1850;
+              }
+              startMarqueeRaf();
+            } else {
+              stopMarqueeRaf();
+            }
+          }, { threshold: 0.05 });
+          io.observe(sepEl);
+
+          // Lively morph scheduler: morphs 6 random non-frozen shapes every 380ms (ONLY when visible!)
+          setInterval(() => {
+            if (!sepState.inView || reducedMotion) return;
+            for (let k = 0; k < 6; k++) {
+              const pick = items[Math.floor(Math.random() * items.length)];
+              if (pick && !pick.frozen) triggerSingleMorph(pick);
+            }
+          }, 380);
+
+          function tickMarquee(now) {
+            sepRafId = 0;
+            if (!sepState.inView) return;
+            const dt = Math.min(0.05, (now - prevTs) / 1000);
+            prevTs = now;
+            if (!sepState.halfWidth) {
+              sepState.halfWidth = track.scrollWidth / 2;
+              if (direction > 0 && sepState.halfWidth > 0) {
+                sepState.offsetX = -sepState.halfWidth;
+              }
+            }
+
+            const targetSpeed = (sepState.hovered || reducedMotion || !sepState.started)
+              ? 0
+              : direction * cruiseSpeedPxPerSec;
+            const rate = sepState.hovered ? 12 : 3.2;
+            sepState.curSpeed += (targetSpeed - sepState.curSpeed) * (1 - Math.exp(-rate * dt));
+
+            if (sepState.halfWidth > 0 && Math.abs(sepState.curSpeed) > 0.2) {
+              sepState.offsetX += sepState.curSpeed * dt;
+              while (sepState.offsetX <= -sepState.halfWidth) sepState.offsetX += sepState.halfWidth;
+              while (sepState.offsetX > 0) sepState.offsetX -= sepState.halfWidth;
+              track.style.transform = `translate3d(${sepState.offsetX.toFixed(2)}px, 0, 0)`;
+            }
+            sepRafId = requestAnimationFrame(tickMarquee);
+          }
+        }
+
+        document.querySelectorAll('[data-aosp-separator]').forEach((el, idx) => {
+          initAospSeparator(el, 54, idx === 0 ? 1 : -1);
+        });
+
+        // =========================================================================
+        // 4. EXPRESSIVE SCROLL REVEAL (reveal + stagger grids)
+        // =========================================================================
+        if ('IntersectionObserver' in window && !reducedMotion) {
+          const io = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+              if (e.isIntersecting) {
+                e.target.classList.add('in');
+                io.unobserve(e.target);
+              }
+            });
+          }, { threshold: 0.12 });
+          document.querySelectorAll('.reveal, .stagger-grid').forEach(el => io.observe(el));
+        } else {
+          document.querySelectorAll('.reveal, .stagger-grid').forEach(el => el.classList.add('in'));
+        }
+      })();
+    </script>
+  </body>
+</html>

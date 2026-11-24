@@ -1,9 +1,9 @@
 {
-  "name": "nsac-aperture-app",
+  "name": "n2sac",
   "private": true,
-  "version": "1.5.0",
+  "version": "1.6.0",
   "type": "module",
-  "description": "NSAC Online (CTI/UNESP Bauru) Material 3 Expressive Cross-Platform Application inspired by XDanfr/Aperture and xLexip/Adaptive-Theme",
+  "description": "NSAC Online (CTI/UNESP Bauru) Material 3 Expressive Cross-Platform Application",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "tsc -b && vite build",
