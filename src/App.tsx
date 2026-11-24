@@ -1,6 +1,11 @@
 import { ProfileViewerProvider } from './components/profile/ProfileViewer';
 import { PushedPage } from './components/expressive/PushedPage';
 import { GradeNotificationModal } from './components/GradeNotificationModal';
+import {
+  markSharePromptShown,
+  ShareAppPromptModal,
+  shouldTriggerRareSharePrompt,
+} from './components/ShareAppPromptModal';
 import { FeedbackSettingsSection } from './components/settings/FeedbackSettings';
 import { NotificationSettingsSection } from './components/settings/NotificationSettings';
 import {
@@ -226,6 +231,40 @@ export const App: React.FC = () => {
   );
 
   const [accountProfile, setAccountProfile] = useState<AccountProfileResponse | null>(null);
+  const [sharePromptOpen, setSharePromptOpen] = useState(false);
+  const sharePromptTimerRef = useRef<number | null>(null);
+
+  const cancelSharePromptTimer = useCallback(() => {
+    if (sharePromptTimerRef.current !== null) {
+      window.clearTimeout(sharePromptTimerRef.current);
+      sharePromptTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') {
+        cancelSharePromptTimer();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      cancelSharePromptTimer();
+    };
+  }, [cancelSharePromptTimer]);
+
+  const handleCloseGradeNotification = useCallback(() => {
+    setGradeNotifDetail(null);
+    cancelSharePromptTimer();
+    if (!shouldTriggerRareSharePrompt()) return;
+    sharePromptTimerRef.current = window.setTimeout(() => {
+      sharePromptTimerRef.current = null;
+      if (document.visibilityState !== 'visible') return;
+      markSharePromptShown();
+      setSharePromptOpen(true);
+    }, 3000);
+  }, [cancelSharePromptTimer]);
   const [rankingPrefs, setRankingPrefs] = useState<RankingPreferences | null>(null);
   const [savingRankingConsent, setSavingRankingConsent] = useState(false);
   const [fichas, setFichas] = useState<FichaAvaliacaoEntry[]>(() => {
@@ -374,22 +413,6 @@ export const App: React.FC = () => {
             applyCourseClassCode(profileRes.class_code);
           }
         }
-
-        // Background-hydrate auxiliary NSAC routes with ETag support
-        Promise.allSettled([
-          fetchFichaList(session.token, session.account_id, forceBackendRefresh).then((r) =>
-            setFichas(r.data)
-          ),
-          fetchAtrasos(session.token, session.account_id, forceBackendRefresh).then((r) =>
-            setAtrasos(r.data)
-          ),
-          fetchSaidas(session.token, session.account_id, forceBackendRefresh).then((r) =>
-            setSaidas(r.data)
-          ),
-          fetchHomeInfo(session.token, session.account_id, forceBackendRefresh).then((r) =>
-            setHomeInfo(r.data)
-          ),
-        ]);
       } catch (err) {
         if (err instanceof NsacApiClientError && err.status === 401) {
           await handleLogout();
@@ -611,20 +634,39 @@ export const App: React.FC = () => {
     [session, activeTab, applyCourseClassCode, synchronizeAllData]
   );
 
+  const frequenciaHydratedAccountRef = useRef<number | null>(null);
+
+  // Lazy-load auxiliary NSAC routes (fichas, atrasos, saídas, home) ONLY when the user
+  // actually navigates to the Frequência tab, from backend cache/ETag (refresh=false).
+  useEffect(() => {
+    if (!session || activeTab !== 'frequencia') return;
+    if (frequenciaHydratedAccountRef.current === session.account_id) return;
+    frequenciaHydratedAccountRef.current = session.account_id;
+    void refreshActiveTabData(false);
+  }, [session, activeTab, refreshActiveTabData]);
+
   const handleManualRefresh = useCallback(
     (forceBackendRefresh = false) => {
-      if (refreshCooldownUntil !== null && forceBackendRefresh) return;
       if (forceBackendRefresh) {
+        if (refreshCooldownUntil !== null) {
+          // Inside 60s NSAC scrape cooldown: still refresh from server cache without hitting NSAC.
+          void refreshActiveTabData(false);
+          return;
+        }
         setRefreshCooldownUntil(Date.now() + MANUAL_REFRESH_COOLDOWN_SECS * 1000);
-      }
-      if (forceBackendRefresh) {
-        // Sentinela "Forçar sincronização no NSAC" explicitly forces a backend NSAC sync
-        void synchronizeAllData(true);
+        // Live NSAC sync scoped strictly to the active tab:
+        // - Frequência tab: refreshes only fichas/atrasos/saidas/home
+        // - Boletim tab (or Sentinela button): refreshes only boletim (updating Sentinel heuristic)
+        if (!settingsOpen && !sentinelaOpen && activeTab === 'frequencia') {
+          void refreshActiveTabData(true);
+        } else {
+          void synchronizeAllData(true);
+        }
         return;
       }
       void refreshActiveTabData(false);
     },
-    [refreshCooldownUntil, synchronizeAllData, refreshActiveTabData]
+    [refreshCooldownUntil, synchronizeAllData, refreshActiveTabData, settingsOpen, sentinelaOpen, activeTab]
   );
 
   if (!session) {
@@ -666,7 +708,11 @@ export const App: React.FC = () => {
         refreshCooldownUntil={refreshCooldownUntil}
         isRefreshing={isRefreshing || tabChildRefreshing}
         lastHttpStatus={lastStatus}
-        onManualRefresh={() => handleManualRefresh(false)}
+        onManualRefresh={() =>
+          handleManualRefresh(
+            !settingsOpen && !sentinelaOpen && (activeTab === 'boletim' || activeTab === 'frequencia')
+          )
+        }
         onLogout={handleLogout}
       >
         <div
@@ -690,7 +736,7 @@ export const App: React.FC = () => {
         >
           <Suspense fallback={<MorphingLoadingState label="Carregando tela..." />}>
             {activeTab === 'boletim' && (
-              <BoletimScreen boletim={boletim} loading={isRefreshing && !boletim} />
+              <BoletimScreen boletim={boletim} loading={isRefreshing && !boletim} token={session.token} />
             )}
             {activeTab === 'turma' && (
               <TurmaScreen
@@ -810,9 +856,13 @@ export const App: React.FC = () => {
             boletim={boletim}
             refreshing={isRefreshing}
             onOpenBoletim={() => selectTab('boletim')}
-            onClose={() => setGradeNotifDetail(null)}
+            onClose={handleCloseGradeNotification}
           />
         )}
+        <ShareAppPromptModal
+          open={sharePromptOpen}
+          onClose={() => setSharePromptOpen(false)}
+        />
         <RankingConsentModal
           open={Boolean(rankingPrefs && !rankingPrefs.has_decided)}
           saving={savingRankingConsent}

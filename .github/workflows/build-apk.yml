@@ -4,11 +4,19 @@ on:
   push:
     branches:
       - main
+    # Only rebuild the native APK when native Android/Capacitor/Gradle files actually change.
+    # Pure web/UI/OTA changes (src/**, public/**, package.json, nginx, etc.) are served directly
+    # by n2sac-web and MUST NOT trigger a full APK compilation.
     paths:
-      - 'android/**'
+      - 'android/app/src/main/java/**'
+      - 'android/app/src/main/res/**'
+      - 'android/app/src/main/AndroidManifest.xml'
+      - 'android/app/build.gradle'
+      - 'android/build.gradle'
+      - 'android/settings.gradle'
+      - 'android/variables.gradle'
+      - 'android/gradle/**'
       - 'capacitor.config.ts'
-      - 'package.json'
-      - 'src/appVersion.ts'
       - 'Dockerfile.android-builder'
   workflow_dispatch:
     inputs:
@@ -45,6 +53,7 @@ env:
 jobs:
   build-and-publish-apk:
     name: Build Signed APK on Server & Publish to criperrr/n2sac Releases
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip apk]')
     runs-on: [self-hosted, linux, x64, n2sac-builder]
     timeout-minutes: 25
 

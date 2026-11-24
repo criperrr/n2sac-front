@@ -1,4 +1,4 @@
-import type { AllYearsResponse } from '../api/types';
+import type { AllYearsResponse, RecoveryStatusCode } from '../api/types';
 import type { GradePushHighlight } from '../notifications/pushService';
 import { isBimesterPosted, normalizeYearInfo } from '../screens/BoletimScreen';
 import { stripAccents } from './subjectIcons';
@@ -8,9 +8,16 @@ const STORAGE_PREFIX = 'n2sac_seen_grades_v1:';
 interface SeenGradeEntry {
   grade: number | null;
   recovery: boolean;
+  recoveryCode?: RecoveryStatusCode;
+  recovered?: boolean | null;
 }
 
 type SeenGradesSnapshot = Record<string, SeenGradeEntry>;
+
+function normalizeRecoveryCode(code: RecoveryStatusCode | undefined, recovery: boolean): RecoveryStatusCode | undefined {
+  if (code) return code;
+  return recovery ? undefined : 'NAC';
+}
 
 function storageKey(accountId: number): string {
   return `${STORAGE_PREFIX}${accountId}`;
@@ -48,9 +55,13 @@ export function buildSeenGradesSnapshot(boletim: AllYearsResponse): SeenGradesSn
       for (const bi of subj.bimesters) {
         if (!isBimesterPosted(bi)) continue;
         const key = gradeHighlightKey(subj.subjectName, bi.bimester, yr.year);
+        const recCode = normalizeRecoveryCode(bi.personal.recoveryCode, Boolean(bi.personal.recovery));
+        const hasRecovery = Boolean(bi.personal.recovery) || (recCode !== undefined && recCode !== 'NAC');
         snapshot[key] = {
           grade: bi.personal.grade,
-          recovery: Boolean(bi.personal.recovery),
+          recovery: hasRecovery,
+          recoveryCode: recCode,
+          recovered: bi.personal.recovered ?? null,
         };
       }
     }
@@ -126,8 +137,27 @@ export function detectNewGradesAndUpdateSeen(
         if (!isBimesterPosted(bi)) continue;
         const key = gradeHighlightKey(subj.subjectName, bi.bimester, yr.year);
         const old = prev[key];
+        const currRecCode = normalizeRecoveryCode(bi.personal.recoveryCode, Boolean(bi.personal.recovery));
+        const currHasRecovery =
+          Boolean(bi.personal.recovery) || (currRecCode !== undefined && currRecCode !== 'NAC');
+        const oldRecCode = old ? normalizeRecoveryCode(old.recoveryCode, Boolean(old.recovery)) : undefined;
+        const recoveryCodeChanged = Boolean(
+          old && oldRecCode !== undefined && currRecCode !== undefined && oldRecCode !== currRecCode
+        );
+        const recoveredChanged = Boolean(
+          old &&
+            old.recovered !== undefined &&
+            bi.personal.recovered !== undefined &&
+            old.recovered !== bi.personal.recovered
+        );
         const isNew = !old;
-        const isUpdated = Boolean(old && (gradesDiffer(old.grade, bi.personal.grade) || old.recovery !== Boolean(bi.personal.recovery)));
+        const isUpdated = Boolean(
+          old &&
+            (gradesDiffer(old.grade, bi.personal.grade) ||
+              Boolean(old.recovery) !== currHasRecovery ||
+              recoveryCodeChanged ||
+              recoveredChanged)
+        );
         if (!isNew && !isUpdated) continue;
 
         const prevPosted = sortedBims
