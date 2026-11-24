@@ -364,7 +364,10 @@ export async function checkGitHubNativeRelease(): Promise<NativeUpdateInfo | nul
       assets?: Array<{ name?: string; browser_download_url?: string }>;
     };
     const latestTag = (data.tag_name ?? '').trim();
-    if (!latestTag || compareSemver(latestTag, CURRENT_APP_VERSION) <= 0) {
+    const installedBaseline = Capacitor.isNativePlatform()
+      ? getInstalledNativeVersion()
+      : CURRENT_APP_VERSION;
+    if (!latestTag || compareSemver(latestTag, installedBaseline) <= 0) {
       return null;
     }
     const apkAsset = data.assets?.find((a) => a.name?.toLowerCase().endsWith('.apk'));

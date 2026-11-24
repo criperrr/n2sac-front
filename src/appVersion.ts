@@ -5,7 +5,7 @@
  * Numbering restarted at 1.0.0 for the first stable release ("n²sac v1");
  * pre-release builds used 2.0.x.
  */
-export const APP_VERSION = '1.5.0';
+export const APP_VERSION = '1.6.0';
 
 /** Human label: `n²sac v1` for x.0.0, otherwise the full number (`n²sac v1.0.3`). */
 export function formatVersionLabel(version: string = APP_VERSION): string {
