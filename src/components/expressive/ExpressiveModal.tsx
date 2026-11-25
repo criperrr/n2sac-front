@@ -165,8 +165,9 @@ export const ExpressiveModal: React.FC<{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        // Keeps the dialog (and a focused field in it) above the software keyboard.
-        padding: '16px 16px calc(16px + var(--nsac-ime-height, 0px))',
+        // Keeps the dialog below the status bar and above the software keyboard.
+        padding:
+          'calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px) + var(--nsac-ime-height, 0px))',
         transition: 'padding-bottom 120ms linear',
       }}
     >
@@ -190,7 +191,8 @@ export const ExpressiveModal: React.FC<{
           position: 'relative',
           width: '100%',
           maxWidth,
-          maxHeight: 'calc(88dvh - var(--nsac-ime-height, 0px))',
+          maxHeight:
+            'calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - var(--nsac-ime-height, 0px) - 32px)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',

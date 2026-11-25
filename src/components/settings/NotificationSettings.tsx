@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { Bell, BellOff, Check, ChevronDown, ExternalLink, HelpCircle, MessageSquare, Pencil, RefreshCw, Settings } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Bell, BellOff, Check, ExternalLink, MessageSquare, RefreshCw, Settings } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import {
   deleteAccountFcmToken,
+  fetchAccountConnections,
   fetchNotificationPreferences,
   NsacApiClientError,
+  startConnectionOAuth,
   updateAccountDiscordLink,
   updateAccountFcmToken,
   updateNotificationPreferences,
 } from '../../api/nsacClient';
 import type {
+  AccountConnection,
   AccountProfileResponse,
   NotificationPreferences,
   RoomChatNotificationMode,
@@ -158,23 +161,36 @@ export const NotificationQuickToggle: React.FC<NotificationProps & { onOpenSetti
   );
 };
 
-const DISCORD_ID_RE = /^\d{17,20}$/;
-
-/** Configurações → Notificações: device push + Discord link. */
+/** Configurações → Notificações: device push + Discord OAuth notifications. */
 export const NotificationSettingsSection: React.FC<NotificationProps> = (props) => {
   const { tokens, isMaterialYou } = useM3Theme();
   const { accountProfile, token, onProfileUpdated } = props;
   const device = useDeviceNotifications(props);
 
   const linkedId = accountProfile?.discord_id ?? null;
-  const [editing, setEditing] = useState(!linkedId);
-  const [discordInput, setDiscordInput] = useState(linkedId ?? '');
+  const [discordConn, setDiscordConn] = useState<AccountConnection | null>(null);
   const [savingDiscord, setSavingDiscord] = useState(false);
   const busyDiscord = useMinimumBusy(savingDiscord);
   const [discordFeedback, setDiscordFeedback] = useState<Feedback>(null);
-  const [helpOpen, setHelpOpen] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPreferences | null>(null);
   const [savingPrefs, setSavingPrefs] = useState(false);
+
+  const loadDiscordConnection = useCallback(async () => {
+    try {
+      const res = await fetchAccountConnections(token);
+      const found = res.connections.find((c) => c.provider === 'discord') ?? null;
+      setDiscordConn(found);
+    } catch {
+      // ignore if offline
+    }
+  }, [token]);
+
+  useEffect(() => {
+    void loadDiscordConnection();
+    const onFocus = () => void loadDiscordConnection();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [loadDiscordConnection]);
 
   useEffect(() => {
     let cancelled = false;
@@ -214,23 +230,47 @@ export const NotificationSettingsSection: React.FC<NotificationProps> = (props) 
     return () => window.clearTimeout(t);
   }, [discordFeedback]);
 
-  const trimmed = discordInput.trim();
-  const validId = DISCORD_ID_RE.test(trimmed);
-
-  const linkDiscord = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validId) return;
+  const connectDiscordOAuth = async () => {
     setSavingDiscord(true);
     setDiscordFeedback(null);
     try {
-      const updated = await updateAccountDiscordLink(token, trimmed);
-      onProfileUpdated(updated);
-      setEditing(false);
-      setDiscordFeedback({ type: 'success', message: 'Discord vinculado. Mande /boletim para a Gemilona para testar.' });
+      const { authorize_url } = await startConnectionOAuth(
+        token,
+        'discord',
+        Capacitor.isNativePlatform() ? 'android' : 'web'
+      );
+      window.open(authorize_url, '_blank', 'noopener,noreferrer');
     } catch (err) {
       setDiscordFeedback({
         type: 'error',
-        message: err instanceof NsacApiClientError ? err.message : 'Não foi possível vincular o Discord.',
+        message: err instanceof NsacApiClientError ? err.message : 'Não foi possível iniciar a conexão com o Discord.',
+      });
+    } finally {
+      setSavingDiscord(false);
+    }
+  };
+
+  const toggleDiscordNotifications = async (enable: boolean) => {
+    const targetId = discordConn?.external_id ?? linkedId;
+    if (enable && !targetId) {
+      await connectDiscordOAuth();
+      return;
+    }
+    setSavingDiscord(true);
+    setDiscordFeedback(null);
+    try {
+      const updated = await updateAccountDiscordLink(token, enable && targetId ? targetId : '');
+      onProfileUpdated(updated);
+      setDiscordFeedback({
+        type: 'success',
+        message: enable
+          ? 'Notificações no Discord ativadas.'
+          : 'Notificações no Discord desativadas.',
+      });
+    } catch (err) {
+      setDiscordFeedback({
+        type: 'error',
+        message: err instanceof NsacApiClientError ? err.message : 'Não foi possível atualizar as notificações do Discord.',
       });
     } finally {
       setSavingDiscord(false);
@@ -385,147 +425,75 @@ export const NotificationSettingsSection: React.FC<NotificationProps> = (props) 
           </IconShapeContainer>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={title}>Discord</div>
-            <div style={sub}>Consulte o boletim pela Gemilona e receba os avisos de nota por mensagem direta.</div>
+            <div style={sub}>Conecte sua conta do Discord para receber avisos de notas por mensagem direta pelo n²sac.</div>
           </div>
         </div>
 
-        {/* Linked account tile */}
-        <Expandable open={Boolean(linkedId) && !editing}>
-          <div
-            style={{
-              marginTop: 14,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '10px 10px 10px 14px',
-              borderRadius: radius,
-              backgroundColor: tokens.surfaceContainerHigh,
-            }}
-          >
-            <span
+        {discordConn || linkedId ? (
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div
               style={{
-                width: 28,
-                height: 28,
-                flexShrink: 0,
-                borderRadius: '50%',
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: tokens.gradeSuccessContainer,
-                color: tokens.onGradeSuccessContainer,
+                gap: 12,
+                padding: '10px 14px',
+                borderRadius: radius,
+                backgroundColor: tokens.surfaceContainerHigh,
               }}
             >
-              <Check size={16} />
-            </span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '0.82rem', fontWeight: 800 }}>Conta vinculada</div>
-              <div
+              <span
                 style={{
-                  fontSize: '0.76rem',
-                  color: tokens.onSurfaceVariant,
-                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  width: 28,
+                  height: 28,
+                  flexShrink: 0,
+                  borderRadius: '50%',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: tokens.gradeSuccessContainer,
+                  color: tokens.onGradeSuccessContainer,
                 }}
               >
-                ID {linkedId}
-              </div>
-            </div>
-            <EnhancedMorphButton size="sm" variant="outlined" icon={<Pencil size={14} />} onClick={() => setEditing(true)}>
-              Trocar
-            </EnhancedMorphButton>
-          </div>
-        </Expandable>
-
-        {/* Link / change form */}
-        <Expandable open={editing || !linkedId}>
-          <form onSubmit={linkDiscord} style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <label style={{ fontSize: '0.76rem', fontWeight: 700, color: tokens.onSurfaceVariant, margin: '0 4px' }} htmlFor="nsac-discord-id">
-              Seu ID do Discord
-            </label>
-            <input
-              id="nsac-discord-id"
-              type="text"
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="348921849128491008"
-              value={discordInput}
-              onChange={(e) => setDiscordInput(e.target.value.replace(/[^\d]/g, ''))}
-              style={{
-                height: 48,
-                padding: '0 16px',
-                borderRadius: radius,
-                border: `1.5px solid ${trimmed && !validId ? tokens.error : tokens.outlineVariant}`,
-                backgroundColor: tokens.surfaceContainerLowest,
-                color: tokens.onSurface,
-                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-                fontSize: '0.95rem',
-                letterSpacing: '0.02em',
-                outline: 'none',
-                boxSizing: 'border-box',
-                width: '100%',
-              }}
-            />
-            {trimmed && !validId && (
-              <span style={{ fontSize: '0.74rem', color: tokens.error, margin: '0 4px' }}>O ID tem de 17 a 20 números.</span>
-            )}
-            <div style={{ display: 'grid', gridTemplateColumns: linkedId ? '1fr 1fr' : '1fr', gap: 8 }}>
-              {linkedId && (
-                <EnhancedMorphButton
-                  size="md"
-                  variant="outlined"
-                  fullWidth
-                  onClick={() => {
-                    setDiscordInput(linkedId);
-                    setEditing(false);
+                <Check size={16} />
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 800 }}>Discord conectado</div>
+                <div
+                  style={{
+                    fontSize: '0.76rem',
+                    color: tokens.onSurfaceVariant,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  Cancelar
-                </EnhancedMorphButton>
-              )}
-              <EnhancedMorphButton
-                type="submit"
-                size="md"
-                variant="filled"
-                fullWidth
-                disabled={busyDiscord || !validId}
-                icon={busyDiscord ? <MorphingShapeIndicator size={16} label="Vinculando" /> : <Check size={15} />}
-              >
-                {busyDiscord ? 'Vinculando…' : linkedId ? 'Salvar' : 'Vincular'}
-              </EnhancedMorphButton>
+                  {discordConn?.display_name || (discordConn?.handle ? `@${discordConn.handle}` : `ID ${linkedId}`)}
+                </div>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setHelpOpen((v) => !v)}
-              aria-expanded={helpOpen}
-              style={{
-                alignSelf: 'flex-start',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '6px 4px',
-                border: 'none',
-                background: 'transparent',
-                color: tokens.primary,
-                fontFamily: 'inherit',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                cursor: 'pointer',
+            <MainSwitchPillCard
+              title="Receber notificações no Discord"
+              subtitle={linkedId ? 'Avisos de novas notas enviados por DM' : 'Ative para receber avisos por DM'}
+              checked={Boolean(linkedId)}
+              onChange={(next) => {
+                if (!busyDiscord) void toggleDiscordNotifications(next);
               }}
+            />
+          </div>
+        ) : (
+          <div style={{ marginTop: 14 }}>
+            <EnhancedMorphButton
+              size="md"
+              variant="filled"
+              fullWidth
+              disabled={busyDiscord}
+              icon={busyDiscord ? <MorphingShapeIndicator size={16} label="Conectando" /> : <MessageSquare size={16} />}
+              onClick={() => void connectDiscordOAuth()}
             >
-              <HelpCircle size={15} /> Como achar meu ID?
-              <ChevronDown size={15} style={{ transition: 'rotate 250ms', rotate: helpOpen ? '180deg' : '0deg' }} />
-            </button>
-            <Expandable open={helpOpen}>
-              <ol style={{ margin: '0 0 4px', paddingLeft: 22, fontSize: '0.8rem', color: tokens.onSurfaceVariant, lineHeight: 1.6 }}>
-                <li>No Discord, abra Configurações → Avançado e ative o <strong>Modo desenvolvedor</strong>.</li>
-                <li>Toque na sua foto de perfil e escolha <strong>Copiar ID do usuário</strong>.</li>
-                <li>Cole aqui. São só números.</li>
-              </ol>
-            </Expandable>
-          </form>
-        </Expandable>
+              {busyDiscord ? 'Abrindo Discord…' : 'Conectar conta do Discord'}
+            </EnhancedMorphButton>
+          </div>
+        )}
 
         <FeedbackLine feedback={discordFeedback} />
 
@@ -546,7 +514,7 @@ export const NotificationSettingsSection: React.FC<NotificationProps> = (props) 
           }}
         >
           <span style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ display: 'block', fontSize: '0.86rem', fontWeight: 800 }}>Adicionar a Gemilona a um servidor</span>
+            <span style={{ display: 'block', fontSize: '0.86rem', fontWeight: 800 }}>Adicionar o n²sac a um servidor</span>
             <span style={{ display: 'block', fontSize: '0.76rem', color: tokens.onSurfaceVariant, marginTop: 2 }}>Avisos de nota direto no servidor da sua turma</span>
           </span>
           <ExternalLink size={18} color={tokens.onSurfaceVariant} />

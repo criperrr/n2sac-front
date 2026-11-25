@@ -1,10 +1,10 @@
 {
-  "version": "1.6.2",
-  "buildId": "2026-11-25T00:09:15Z",
+  "version": "1.6.3",
+  "buildId": "2026-11-25T00:36:18Z",
   "channel": "ota",
-  "important": true,
-  "apkVersion": "1.6.2",
-  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.2/n2sac-1.6.2.apk",
+  "important": false,
+  "apkVersion": "1.6.3",
+  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.3/n2sac-1.6.3.apk",
   "apkSha256": "",
-  "notes": "Corrige congelamento ao abrir o app durante download em segundo plano."
+  "notes": "Conexão com Spotify e Discord via OAuth, notificações do Discord sem digitar ID e ajuste do teclado nos modais."
 }

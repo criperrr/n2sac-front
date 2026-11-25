@@ -276,6 +276,7 @@ export interface PublicConnection {
 }
 
 export interface AccountConnection extends PublicConnection {
+  external_id?: string | null;
   is_visible: boolean;
   display_order: number;
   updated_at: string;
