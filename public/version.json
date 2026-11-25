@@ -1,10 +1,10 @@
 {
-  "version": "1.6.5",
-  "buildId": "2026-11-25T01:23:31Z",
+  "version": "1.6.6",
+  "buildId": "2026-11-25T01:55:12Z",
   "channel": "ota",
   "important": false,
   "apkVersion": "1.6.2",
   "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.2/n2sac-1.6.2.apk",
   "apkSha256": "4300e01f33c8c685a6475c113714247d5edf9501cf98abbff085e0b9005895f7",
-  "notes": "Sistema de atualizações mais confiável e correções gerais."
+  "notes": "Bot do Discord reativado, confirmação de nome via Google ativada e logo adaptativa no Design Padrão."
 }

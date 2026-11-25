@@ -30,7 +30,7 @@ function resolveLauncherThemeKey(
   if (!hasUserCustomized || settings.useSystemDynamicColor) {
     return 'system';
   }
-  if (settings.designSystem !== 'material-you' || settings.presetId === EDITORIAL_PRESET_ID) {
+  if (settings.presetId === EDITORIAL_PRESET_ID) {
     return 'editorial';
   }
   switch (settings.presetId) {

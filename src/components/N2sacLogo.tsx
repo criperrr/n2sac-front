@@ -40,7 +40,7 @@ export const N2sacLogo: React.FC<N2sacLogoProps> = React.memo(({
   className,
   style,
 }) => {
-  const { tokens, effectiveIsDark: isDark, isMaterialYou } = useM3Theme();
+  const { tokens, effectiveIsDark: isDark } = useM3Theme();
   const uid = useId().replace(/:/g, '');
   const maskId = `n2sac-seal-mask-${uid}`;
 
@@ -138,11 +138,11 @@ export const N2sacLogo: React.FC<N2sacLogoProps> = React.memo(({
     };
   }, []);
 
-  // Base grayscale contrasts in Editorial mode; real Monet tonal roles in Material You mode
-  const sealColor = isMaterialYou ? tokens.primary : isDark ? '#e0e0e0' : '#26282c';
-  const orb1Color = isMaterialYou ? tokens.tertiary : isDark ? '#9e9e9e' : '#757575';
-  const orb2Color = isMaterialYou ? tokens.secondary : isDark ? '#616161' : '#a8a8a8';
-  const textColor = isMaterialYou ? tokens.onSurface : isDark ? '#ffffff' : '#111214';
+  // Always adapt logo roles to the active theme palette (both Default Editorial and Material You)
+  const sealColor = tokens.primary;
+  const orb1Color = tokens.tertiary;
+  const orb2Color = tokens.secondary;
+  const textColor = tokens.onSurface;
   const blendMode: React.CSSProperties['mixBlendMode'] = isDark ? 'screen' : 'multiply';
 
   const layerBase: React.CSSProperties = {
