@@ -3,8 +3,8 @@
   "buildId": "2026-11-25T02:19:55Z",
   "channel": "ota",
   "important": true,
-  "apkVersion": "1.6.2",
-  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.2/n2sac-1.6.2.apk",
-  "apkSha256": "4300e01f33c8c685a6475c113714247d5edf9501cf98abbff085e0b9005895f7",
+  "apkVersion": "1.6.7",
+  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.7/n2sac-1.6.7.apk",
+  "apkSha256": "dbc9faa544c1ca3e2a2eca3b6c721731fff36dea7308ed8a0ce3653c63428db0",
   "notes": "Confirmação de nome oficial via Google funcionando no Android e na Web, e atualizações em segundo plano mais seguras."
 }
