@@ -61,7 +61,10 @@ export const ProfileConnectionsStrip: React.FC<{
   const { tokens, isMaterialYou } = useM3Theme();
   const [copiedProvider, setCopiedProvider] = useState<string | null>(null);
 
-  if (!connections || connections.length === 0) return null;
+  const visible = (connections ?? []).filter(
+    (c) => c.provider === 'spotify' || c.provider === 'discord'
+  );
+  if (visible.length === 0) return null;
 
   const handleTap = (conn: PublicConnection) => {
     if (conn.profile_url) {
@@ -91,7 +94,7 @@ export const ProfileConnectionsStrip: React.FC<{
         Conexões
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {connections.map((conn) => {
+        {visible.map((conn) => {
           const meta = getConnectionProviderMeta(conn.provider);
           const isCopied = copiedProvider === conn.provider;
           const displayLabel = conn.display_name?.trim() || conn.handle;

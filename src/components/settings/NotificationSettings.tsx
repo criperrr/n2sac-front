@@ -18,6 +18,7 @@ import type {
   RoomChatNotificationMode,
 } from '../../api/types';
 import { registerNativeFcmPush } from '../../notifications/pushService';
+import { openExternalUrl, preopenTabForWeb } from '../../platform/openExternal';
 import { useM3Theme } from '../../theme/ThemeContext';
 import { useMinimumBusy } from '../../theme/motion';
 import { EnhancedMorphButton, ExpressiveSegmentedCard, IconShapeContainer, MainSwitchPillCard } from '../expressive/ExpressivePrimitives';
@@ -233,14 +234,22 @@ export const NotificationSettingsSection: React.FC<NotificationProps> = (props) 
   const connectDiscordOAuth = async () => {
     setSavingDiscord(true);
     setDiscordFeedback(null);
+    const preopened = preopenTabForWeb();
     try {
       const { authorize_url } = await startConnectionOAuth(
         token,
         'discord',
         Capacitor.isNativePlatform() ? 'android' : 'web'
       );
-      window.open(authorize_url, '_blank', 'noopener,noreferrer');
+      const outcome = openExternalUrl(authorize_url, preopened);
+      if (outcome === 'needs-apk-update') {
+        setDiscordFeedback({
+          type: 'error',
+          message: 'Atualize o app Android para abrir o login do Discord no navegador.',
+        });
+      }
     } catch (err) {
+      if (preopened && !preopened.closed) preopened.close();
       setDiscordFeedback({
         type: 'error',
         message: err instanceof NsacApiClientError ? err.message : 'Não foi possível iniciar a conexão com o Discord.',

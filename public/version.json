@@ -1,10 +1,10 @@
 {
-  "version": "1.6.3",
-  "buildId": "2026-11-25T00:36:18Z",
+  "version": "1.6.4",
+  "buildId": "2026-11-25T00:46:18Z",
   "channel": "ota",
   "important": false,
-  "apkVersion": "1.6.3",
-  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.3/n2sac-1.6.3.apk",
+  "apkVersion": "1.6.4",
+  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.4/n2sac-1.6.4.apk",
   "apkSha256": "",
-  "notes": "Conexão com Spotify e Discord via OAuth, notificações do Discord sem digitar ID e ajuste do teclado nos modais."
+  "notes": "Nova tela de conexões: conecte Spotify e Discord com 1 toque pelo login oficial."
 }
