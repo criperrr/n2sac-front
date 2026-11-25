@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Bell, BellOff, Check, ExternalLink, MessageSquare, RefreshCw, Settings } from 'lucide-react';
+import { Bell, BellOff, Check, ExternalLink, RefreshCw, Settings } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import {
   deleteAccountFcmToken,
@@ -24,6 +24,7 @@ import { useMinimumBusy } from '../../theme/motion';
 import { EnhancedMorphButton, ExpressiveSegmentedCard, IconShapeContainer, MainSwitchPillCard } from '../expressive/ExpressivePrimitives';
 import { Expandable } from '../expressive/Expandable';
 import { MorphingShapeIndicator } from '../expressive/ShapeMorph';
+import { DiscordIcon } from '../profile/BrandIcons';
 
 type Feedback = { type: 'success' | 'error'; message: string } | null;
 
@@ -430,7 +431,7 @@ export const NotificationSettingsSection: React.FC<NotificationProps> = (props) 
       <ExpressiveSegmentedCard index={1} total={2} style={{ padding: '18px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
           <IconShapeContainer size={44} containerColor="#5865F2" contentColor="#FFFFFF">
-            <MessageSquare size={19} />
+            <DiscordIcon size={21} />
           </IconShapeContainer>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={title}>Discord</div>
@@ -496,7 +497,7 @@ export const NotificationSettingsSection: React.FC<NotificationProps> = (props) 
               variant="filled"
               fullWidth
               disabled={busyDiscord}
-              icon={busyDiscord ? <MorphingShapeIndicator size={16} label="Conectando" /> : <MessageSquare size={16} />}
+              icon={busyDiscord ? <MorphingShapeIndicator size={16} label="Conectando" /> : <DiscordIcon size={17} />}
               onClick={() => void connectDiscordOAuth()}
             >
               {busyDiscord ? 'Abrindo Discord…' : 'Conectar conta do Discord'}

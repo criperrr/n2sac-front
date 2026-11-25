@@ -10,13 +10,13 @@ import {
   Globe,
   Instagram,
   Linkedin,
-  MessageSquare,
   Music2,
   Tv,
   Youtube,
 } from 'lucide-react';
 import type { PublicConnection } from '../../api/types';
 import { useM3Theme } from '../../theme/ThemeContext';
+import { DiscordIcon, SpotifyIcon } from './BrandIcons';
 
 interface ProviderMeta {
   label: string;
@@ -27,9 +27,9 @@ interface ProviderMeta {
 export function getConnectionProviderMeta(provider: string): ProviderMeta {
   switch (provider) {
     case 'spotify':
-      return { label: 'Spotify', accent: '#1DB954', icon: <Music2 size={14} /> };
+      return { label: 'Spotify', accent: '#1DB954', icon: <SpotifyIcon size={14} /> };
     case 'discord':
-      return { label: 'Discord', accent: '#5865F2', icon: <MessageSquare size={14} /> };
+      return { label: 'Discord', accent: '#5865F2', icon: <DiscordIcon size={14} /> };
     case 'github':
       return { label: 'GitHub', accent: '#6E7681', icon: <Github size={14} /> };
     case 'steam':

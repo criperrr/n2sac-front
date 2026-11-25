@@ -1,10 +1,10 @@
 {
-  "version": "1.6.7",
-  "buildId": "2026-11-25T02:19:55Z",
+  "version": "1.6.8",
+  "buildId": "2026-11-25T02:26:28Z",
   "channel": "ota",
-  "important": true,
+  "important": false,
   "apkVersion": "1.6.7",
   "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.7/n2sac-1.6.7.apk",
   "apkSha256": "dbc9faa544c1ca3e2a2eca3b6c721731fff36dea7308ed8a0ce3653c63428db0",
-  "notes": "Confirmação de nome oficial via Google funcionando no Android e na Web, e atualizações em segundo plano mais seguras."
+  "notes": "Ícones oficiais do Spotify e Discord nas conexões e notificações."
 }

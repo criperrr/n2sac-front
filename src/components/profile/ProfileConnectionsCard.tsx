@@ -8,8 +8,6 @@ import {
   EyeOff,
   Link2,
   Loader2,
-  MessageSquare,
-  Music2,
   Trash2,
 } from 'lucide-react';
 import {
@@ -23,6 +21,7 @@ import type { AccountConnection } from '../../api/types';
 import { openExternalUrl, preopenTabForWeb } from '../../platform/openExternal';
 import { useM3Theme } from '../../theme/ThemeContext';
 import { EnhancedMorphButton, ExpressiveSegmentedCard } from '../expressive/ExpressivePrimitives';
+import { DiscordIcon, SpotifyIcon } from './BrandIcons';
 
 interface OAuthCardDef {
   id: 'spotify' | 'discord';
@@ -38,14 +37,14 @@ const PROVIDERS: OAuthCardDef[] = [
     label: 'Spotify',
     tagline: 'Mostre seu perfil verificado do Spotify',
     accent: '#1DB954',
-    icon: <Music2 size={18} />,
+    icon: <SpotifyIcon size={20} />,
   },
   {
     id: 'discord',
     label: 'Discord',
     tagline: 'Vincule seu Discord para perfil e notificações',
     accent: '#5865F2',
-    icon: <MessageSquare size={18} />,
+    icon: <DiscordIcon size={20} />,
   },
 ];
 
