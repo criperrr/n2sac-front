@@ -1,10 +1,10 @@
 {
-  "version": "1.6.1",
-  "buildId": "2026-11-25T00:01:27Z",
+  "version": "1.6.2",
+  "buildId": "2026-11-25T00:09:15Z",
   "channel": "ota",
   "important": true,
-  "apkVersion": "1.6.1",
-  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.1/n2sac-1.6.1.apk",
+  "apkVersion": "1.6.2",
+  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.2/n2sac-1.6.2.apk",
   "apkSha256": "",
-  "notes": "Corrige fechamento ao bloquear e desbloquear a tela, e evita loop de atualização."
+  "notes": "Corrige congelamento ao abrir o app durante download em segundo plano."
 }

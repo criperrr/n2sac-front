@@ -34,6 +34,10 @@ public final class ApkUpdateCache {
     private static final String TMP_FILE = "n2sac-downloading.tmp";
     private static final String META_FILE = "n2sac-verified.meta.json";
     private static final int MAX_REDIRECTS = 8;
+    // Separate locks so an active background HTTP download NEVER blocks getVerifiedCachedMeta()
+    // called synchronously from the WebView JS thread!
+    private static final Object DOWNLOAD_LOCK = new Object();
+    private static final Object META_LOCK = new Object();
 
     public interface ProgressListener {
         void onProgress(int percent);
@@ -62,10 +66,12 @@ public final class ApkUpdateCache {
         return new File(getCacheDir(context), META_FILE);
     }
 
-    public static synchronized void clear(Context context) {
-        deleteQuietly(getApkFile(context));
-        deleteQuietly(getTmpFile(context));
-        deleteQuietly(getMetaFile(context));
+    public static void clear(Context context) {
+        synchronized (META_LOCK) {
+            deleteQuietly(getApkFile(context));
+            deleteQuietly(getTmpFile(context));
+            deleteQuietly(getMetaFile(context));
+        }
     }
 
     private static void deleteQuietly(File f) {
@@ -76,42 +82,39 @@ public final class ApkUpdateCache {
     }
 
     /**
-     * Returns verified cached metadata JSON ({@code version, sha256, apkUrl, ready}) if a valid
-     * APK newer than {@code installedVersion} is already cached and passes SHA-256 verification.
-     * Automatically cleans up stale cached APKs once installed.
+     * Fast, non-blocking metadata check safe to call from the WebView JS thread even while a
+     * background download is in progress (never acquires {@code DOWNLOAD_LOCK} and never hashes
+     * the 11 MB APK synchronously on the UI/JS thread; full SHA-256 verification runs during
+     * {@link #downloadAndVerify} and again in {@link #verifyCachedApkForInstall} before install).
      */
-    public static synchronized JSONObject getVerifiedCachedMeta(Context context, String installedVersion) {
-        File apk = getApkFile(context);
-        File metaFile = getMetaFile(context);
-        if (!apk.exists() || !metaFile.exists()) {
-            return null;
-        }
-        try {
-            JSONObject meta = new JSONObject(readUtf8(metaFile));
-            String version = meta.optString("version", "").trim();
-            String expectedSha = normalizeSha256(meta.optString("sha256", ""));
-            if (version.isEmpty() || expectedSha.isEmpty()) {
+    public static JSONObject getVerifiedCachedMeta(Context context, String installedVersion) {
+        synchronized (META_LOCK) {
+            File apk = getApkFile(context);
+            File metaFile = getMetaFile(context);
+            if (!apk.exists() || apk.length() <= 0 || !metaFile.exists()) {
+                return null;
+            }
+            try {
+                JSONObject meta = new JSONObject(readUtf8(metaFile));
+                String version = meta.optString("version", "").trim();
+                String expectedSha = normalizeSha256(meta.optString("sha256", ""));
+                if (version.isEmpty() || expectedSha.isEmpty()) {
+                    clear(context);
+                    return null;
+                }
+                if (installedVersion != null && !installedVersion.isEmpty()
+                        && compareSemver(version, installedVersion) <= 0) {
+                    // Already installed this version (or newer); reclaim storage.
+                    clear(context);
+                    return null;
+                }
+                meta.put("ready", true);
+                return meta;
+            } catch (Exception e) {
+                Log.w(TAG, "Failed reading cached APK metadata: " + e.getMessage());
                 clear(context);
                 return null;
             }
-            if (installedVersion != null && !installedVersion.isEmpty()
-                    && compareSemver(version, installedVersion) <= 0) {
-                // Already installed this version (or newer); reclaim storage.
-                clear(context);
-                return null;
-            }
-            String actualSha = computeSha256(apk);
-            if (!expectedSha.equalsIgnoreCase(actualSha)) {
-                Log.w(TAG, "Cached APK checksum mismatch; purging corrupt file.");
-                clear(context);
-                return null;
-            }
-            meta.put("ready", true);
-            return meta;
-        } catch (Exception e) {
-            Log.w(TAG, "Failed reading cached APK metadata: " + e.getMessage());
-            clear(context);
-            return null;
         }
     }
 
@@ -144,7 +147,19 @@ public final class ApkUpdateCache {
      * its SHA-256 checksum against {@code expectedSha256} (or {@code <apkUrl>.sha256} if empty),
      * and caches it persistently ONLY if the checksum passes.
      */
-    public static synchronized JSONObject downloadAndVerify(
+    public static JSONObject downloadAndVerify(
+            Context context,
+            String apkUrl,
+            String expectedSha256,
+            String version,
+            ProgressListener listener
+    ) throws Exception {
+        synchronized (DOWNLOAD_LOCK) {
+            return downloadAndVerifyLocked(context, apkUrl, expectedSha256, version, listener);
+        }
+    }
+
+    private static JSONObject downloadAndVerifyLocked(
             Context context,
             String apkUrl,
             String expectedSha256,
