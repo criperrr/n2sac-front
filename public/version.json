@@ -1,10 +1,10 @@
 {
-  "version": "1.6.0",
-  "buildId": "2026-11-24T23:24:00Z",
+  "version": "1.6.1",
+  "buildId": "2026-11-25T00:01:27Z",
   "channel": "ota",
   "important": true,
-  "apkVersion": "1.6.0",
-  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.0/n2sac-1.6.0.apk",
-  "apkSha256": "6060f774364b88793be3c044db3754c0338afdf91ccdbbfb35e1cea588817924",
-  "notes": "Nova logo adaptativa ao tema, animação de abertura renovada, ícones que mudam com a cor escolhida, conexões no perfil, boletim em PDF e app mais leve."
+  "apkVersion": "1.6.1",
+  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.1/n2sac-1.6.1.apk",
+  "apkSha256": "",
+  "notes": "Corrige fechamento ao bloquear e desbloquear a tela, e evita loop de atualização."
 }

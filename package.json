@@ -1,7 +1,7 @@
 {
   "name": "n2sac",
   "private": true,
-  "version": "1.6.0",
+  "version": "1.6.1",
   "type": "module",
   "description": "NSAC Online (CTI/UNESP Bauru) Material 3 Expressive Cross-Platform Application",
   "scripts": {

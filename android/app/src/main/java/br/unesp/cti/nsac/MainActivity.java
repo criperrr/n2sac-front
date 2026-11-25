@@ -334,9 +334,17 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onStop() {
         super.onStop();
-        // Apply any queued launcher icon alias swap ONLY when leaving/closing the app,
-        // so changing the theme inside the app never kills or closes the live task!
+        // NEVER disable the active <activity-alias> on screen-off / lock (onStop while !isFinishing),
+        // because Android immediately kills the live task when its root alias is disabled.
+        if (isFinishing()) {
+            applyPendingLauncherAlias();
+        }
+    }
+
+    @Override
+    public void onDestroy() {
         applyPendingLauncherAlias();
+        super.onDestroy();
     }
 
     @Override
