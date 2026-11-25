@@ -220,7 +220,7 @@ export const ProfileConnectionsCard: React.FC<{
         </div>
       )}
 
-      <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 10, marginTop: 14 }}>
         {PROVIDERS.map((prov) => {
           const conn = connectedMap.get(prov.id);
           const isConnecting = connectingId === prov.id;
@@ -233,20 +233,24 @@ export const ProfileConnectionsCard: React.FC<{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: 12,
-                padding: '12px 14px',
+                gap: 10,
+                padding: '12px 12px',
                 borderRadius: cardRadius,
                 backgroundColor: tokens.surfaceContainerHigh,
                 border: `1px solid ${conn ? `${prov.accent}66` : tokens.outlineVariant}`,
                 opacity: conn && !conn.is_visible ? 0.68 : 1,
+                width: '100%',
+                minWidth: 0,
+                boxSizing: 'border-box',
+                overflow: 'hidden',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
                 <span
                   style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: isMaterialYou ? 14 : 10,
+                    width: 38,
+                    height: 38,
+                    borderRadius: isMaterialYou ? 13 : 10,
                     backgroundColor: `${prov.accent}24`,
                     color: prov.accent,
                     display: 'grid',
@@ -263,7 +267,7 @@ export const ProfileConnectionsCard: React.FC<{
                       display: 'flex',
                       alignItems: 'center',
                       gap: 5,
-                      fontSize: '0.9rem',
+                      fontSize: '0.88rem',
                       fontWeight: 800,
                       color: tokens.onSurface,
                     }}
@@ -273,12 +277,15 @@ export const ProfileConnectionsCard: React.FC<{
                   </div>
                   <div
                     style={{
-                      fontSize: '0.76rem',
+                      fontSize: '0.73rem',
                       color: tokens.onSurfaceVariant,
+                      lineHeight: 1.3,
+                      marginTop: 2,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      marginTop: 2,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
                     }}
                   >
                     {loading
@@ -334,21 +341,23 @@ export const ProfileConnectionsCard: React.FC<{
                   </button>
                 </div>
               ) : (
-                <EnhancedMorphButton
-                  size="sm"
-                  variant="filled"
-                  disabled={loading || isConnecting}
-                  icon={
-                    isConnecting ? (
-                      <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                    ) : (
-                      <ExternalLink size={14} />
-                    )
-                  }
-                  onClick={() => void handleConnectOAuth(prov)}
-                >
-                  {isConnecting ? 'Abrindo…' : 'Conectar'}
-                </EnhancedMorphButton>
+                <div style={{ flexShrink: 0 }}>
+                  <EnhancedMorphButton
+                    size="sm"
+                    variant="filled"
+                    disabled={loading || isConnecting}
+                    icon={
+                      isConnecting ? (
+                        <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                      ) : (
+                        <ExternalLink size={14} />
+                      )
+                    }
+                    onClick={() => void handleConnectOAuth(prov)}
+                  >
+                    {isConnecting ? 'Abrindo…' : 'Conectar'}
+                  </EnhancedMorphButton>
+                </div>
               )}
             </div>
           );

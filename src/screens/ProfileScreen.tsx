@@ -537,17 +537,27 @@ const GoogleOfficialNameCard: React.FC<{
     setVerifying(true);
     setErrorMsg(null);
     setNoticeMsg(null);
-    const preopened = preopenTabForWeb();
     try {
-      const { authorize_url } = await startGoogleNameOAuth(token);
-      const outcome = openExternalUrl(authorize_url, preopened);
-      if (outcome === 'needs-apk-update') {
-        setErrorMsg('Atualize o aplicativo Android para abrir o login do Google no navegador.');
+      // Check first if this account was already verified (e.g. just returned from Chrome or verified elsewhere)
+      const fresh = await fetchUserProfile(token);
+      if (fresh.verified_official_name?.trim()) {
+        onVerified(fresh);
         return;
       }
-      setNoticeMsg('Conclua o login com sua conta @unesp.br no navegador e volte para o n²sac.');
+      const preopened = preopenTabForWeb();
+      try {
+        const { authorize_url } = await startGoogleNameOAuth(token);
+        const outcome = openExternalUrl(authorize_url, preopened);
+        if (outcome === 'needs-apk-update') {
+          setErrorMsg('Atualize o aplicativo Android para abrir o login do Google no navegador.');
+          return;
+        }
+        setNoticeMsg('Conclua o login com sua conta @unesp.br no navegador e volte para o n²sac.');
+      } catch (innerErr) {
+        if (preopened && !preopened.closed) preopened.close();
+        throw innerErr;
+      }
     } catch (err) {
-      if (preopened && !preopened.closed) preopened.close();
       setErrorMsg(err instanceof Error ? err.message : 'Não foi possível iniciar o login com o Google.');
     } finally {
       setVerifying(false);
