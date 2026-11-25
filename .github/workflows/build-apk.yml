@@ -80,7 +80,9 @@ jobs:
       - name: Ensure Android builder Docker image is up to date
         run: |
           set -euo pipefail
-          docker build --network=host -f Dockerfile.android-builder -t "${BUILDER_IMAGE}" .
+          nice -n 15 ionice -c 3 docker build --network=host \
+            --memory=2048m --cpu-period=100000 --cpu-quota=200000 \
+            -f Dockerfile.android-builder -t "${BUILDER_IMAGE}" .
 
       - name: Extract app version metadata
         id: meta
@@ -130,7 +132,12 @@ jobs:
           set -euo pipefail
           HOST_UID="$(id -u)"
           HOST_GID="$(id -g)"
-          docker run --rm --network=host \
+          nice -n 15 ionice -c 3 docker run --rm --network=host \
+            --memory=2800m \
+            --memory-swap=4096m \
+            --cpus=2.0 \
+            --cpu-shares=256 \
+            --oom-score-adj=500 \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -v "${{ steps.secrets.outputs.dir }}:/run/n2sac-secrets:ro" \
             -v n2sac-gradle-cache:/root/.gradle \
@@ -138,6 +145,8 @@ jobs:
             --env-file "${{ steps.secrets.outputs.dir }}/signing.env" \
             -e HOST_UID="${HOST_UID}" \
             -e HOST_GID="${HOST_GID}" \
+            -e NODE_OPTIONS="--max-old-space-size=1024" \
+            -e GRADLE_OPTS="-Xmx1536m -XX:MaxMetaspaceSize=384m -XX:+UseG1GC -Dorg.gradle.daemon=false" \
             -w /workspace \
             "${BUILDER_IMAGE}" \
             bash -lc '
@@ -152,7 +161,9 @@ jobs:
               # Work around @capacitor/background-runner install_libs.js splicing dirs into line 5
               cp /tmp/build.gradle.orig /workspace/android/app/build.gradle
               cd /workspace/android
-              ./gradlew --no-daemon assembleRelease
+              ./gradlew --no-daemon --max-workers=2 \
+                -Dorg.gradle.jvmargs="-Xmx1536m -XX:MaxMetaspaceSize=384m -XX:+UseG1GC" \
+                assembleRelease
             '
 
       - name: Verify APK signature against production assetlinks.json fingerprints & compute SHA-256
@@ -166,6 +177,7 @@ jobs:
           fi
 
           CERT_OUTPUT="$(docker run --rm --network=none \
+            --memory=512m --cpus=1.0 --oom-score-adj=500 \
             -v "${GITHUB_WORKSPACE}:/workspace:ro" \
             -w /workspace \
             "${BUILDER_IMAGE}" \

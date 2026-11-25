@@ -8,11 +8,11 @@ set +x
 # The runner connects outbound via HTTPS to GitHub (no inbound ports opened) and receives
 # signing secrets ephemerally per job.
 
-REPO="${N2SAC_REPO:-criperrr/n2sac}"
+REPO="${N2SAC_REPO:-criperrr/n2sac-front}"
 REMOTE_USER="${N2SAC_USER:-criper}"
 REMOTE_HOST="${N2SAC_HOST:-100.69.91.121}"
-RUNNER_DIR="${N2SAC_RUNNER_DIR:-\$HOME/actions-runner-n2sac}"
-RUNNER_NAME="${N2SAC_RUNNER_NAME:-n2sac-notebook-server}"
+RUNNER_DIR="${N2SAC_RUNNER_DIR:-\$HOME/actions-runner-n2sac-front}"
+RUNNER_NAME="${N2SAC_RUNNER_NAME:-n2sac-front-builder}"
 RUNNER_LABELS="self-hosted,linux,x64,n2sac-builder"
 SERVICE_NAME="n2sac-github-runner.service"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
