@@ -564,6 +564,31 @@ export async function fetchUserProfile(token: string): Promise<UserProfileData> 
   return body.data;
 }
 
+export async function startGoogleNameOAuth(
+  token: string
+): Promise<{ authorize_url: string }> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/account/verify-google-name/oauth/start`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const body = (await res.json()) as {
+    success?: boolean;
+    data?: { authorize_url: string };
+    error?: { code?: string; message?: string };
+  };
+  if (!res.ok || !body?.success || !body.data?.authorize_url) {
+    throw new NsacApiClientError(
+      body?.error?.code ?? 'GOOGLE_OAUTH_START_ERROR',
+      body?.error?.message ?? 'Não foi possível iniciar o login com o Google.',
+      res.status
+    );
+  }
+  return body.data;
+}
+
 export async function verifyGoogleOfficialName(
   token: string,
   idToken: string

@@ -1,12 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { BadgeCheck, Camera, Check, LogOut, Image as ImageIcon, ShieldCheck } from 'lucide-react';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
+import { BadgeCheck, Camera, Check, ExternalLink, LogOut, Image as ImageIcon, ShieldCheck } from 'lucide-react';
 import {
   fetchUserProfile,
   loadCachedUserProfile,
+  startGoogleNameOAuth,
   updateUserProfile,
   verifyGoogleOfficialName,
   type UserProfileData,
 } from '../api/nsacClient';
+import { openExternalUrl, preopenTabForWeb } from '../platform/openExternal';
 import type { AccountProfileResponse } from '../api/types';
 import { useM3Theme } from '../theme/ThemeContext';
 import { EnhancedMorphButton, ExpressiveSegmentedCard } from '../components/expressive/ExpressivePrimitives';
@@ -87,7 +91,10 @@ export const ProfileScreen: React.FC<{
           prev.display_name === data.display_name &&
           prev.bio === data.bio &&
           prev.avatar_data_url === data.avatar_data_url &&
-          prev.banner_data_url === data.banner_data_url
+          prev.banner_data_url === data.banner_data_url &&
+          prev.verified_official_name === data.verified_official_name &&
+          prev.official_name_needs_verification === data.official_name_needs_verification &&
+          prev.google_oauth_client_id === data.google_oauth_client_id
             ? prev
             : data
         );
@@ -488,14 +495,67 @@ const GoogleOfficialNameCard: React.FC<{
   const [gsiReady, setGsiReady] = useState(false);
   const buttonHostRef = useRef<HTMLDivElement | null>(null);
 
+  const isNative = Capacitor.isNativePlatform();
+  const [noticeMsg, setNoticeMsg] = useState<string | null>(null);
   const clientId =
     profile?.google_oauth_client_id?.trim() ||
     ((import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID as string | undefined)?.trim() || '');
   const verifiedName = profile?.verified_official_name?.trim() || null;
   const needsVerification = Boolean(profile?.official_name_needs_verification) && !verifiedName;
 
+  // On Android native, reload profile when returning from Chrome after Google OAuth
   useEffect(() => {
-    if (verifiedName || !clientId) return;
+    if (!isNative || verifiedName) return;
+    let disposed = false;
+    let listener: { remove: () => Promise<void> } | null = null;
+    const refresh = () => {
+      void fetchUserProfile(token)
+        .then((fresh) => {
+          if (!disposed && fresh.verified_official_name) {
+            onVerified(fresh);
+            setNoticeMsg(null);
+          }
+        })
+        .catch(() => {});
+    };
+    const onFocus = () => refresh();
+    window.addEventListener('focus', onFocus);
+    void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) refresh();
+    }).then((h) => {
+      if (disposed) void h.remove();
+      else listener = h;
+    });
+    return () => {
+      disposed = true;
+      window.removeEventListener('focus', onFocus);
+      if (listener) void listener.remove();
+    };
+  }, [isNative, verifiedName, token, onVerified]);
+
+  const handleNativeGoogleOAuth = async () => {
+    setVerifying(true);
+    setErrorMsg(null);
+    setNoticeMsg(null);
+    const preopened = preopenTabForWeb();
+    try {
+      const { authorize_url } = await startGoogleNameOAuth(token);
+      const outcome = openExternalUrl(authorize_url, preopened);
+      if (outcome === 'needs-apk-update') {
+        setErrorMsg('Atualize o aplicativo Android para abrir o login do Google no navegador.');
+        return;
+      }
+      setNoticeMsg('Conclua o login com sua conta @unesp.br no navegador e volte para o n²sac.');
+    } catch (err) {
+      if (preopened && !preopened.closed) preopened.close();
+      setErrorMsg(err instanceof Error ? err.message : 'Não foi possível iniciar o login com o Google.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isNative || verifiedName || !clientId) return;
     let cancelled = false;
     loadGoogleIdentityScript()
       .then(() => {
@@ -621,19 +681,39 @@ const GoogleOfficialNameCard: React.FC<{
       </div>
 
       {clientId ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div ref={buttonHostRef} style={{ minHeight: 40 }} />
-          {!gsiReady && !errorMsg && (
-            <div style={{ fontSize: '0.76rem', color: tokens.onSurfaceVariant }}>
-              Carregando verificação do Google...
-            </div>
-          )}
-          {verifying && (
-            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: tokens.primary }}>
-              Validando conta @unesp.br com o Google...
-            </div>
-          )}
-        </div>
+        isNative ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <EnhancedMorphButton
+              variant="filled"
+              size="md"
+              fullWidth
+              disabled={verifying}
+              icon={<ExternalLink size={15} />}
+              onClick={() => void handleNativeGoogleOAuth()}
+            >
+              {verifying ? 'Abrindo Google…' : 'Confirmar com Google (@unesp.br)'}
+            </EnhancedMorphButton>
+            {noticeMsg && (
+              <div style={{ fontSize: '0.76rem', fontWeight: 600, color: tokens.primary }}>
+                {noticeMsg}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div ref={buttonHostRef} style={{ minHeight: 40 }} />
+            {!gsiReady && !errorMsg && (
+              <div style={{ fontSize: '0.76rem', color: tokens.onSurfaceVariant }}>
+                Carregando verificação do Google...
+              </div>
+            )}
+            {verifying && (
+              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: tokens.primary }}>
+                Validando conta @unesp.br com o Google...
+              </div>
+            )}
+          </div>
+        )
       ) : (
         <div style={{ fontSize: '0.76rem', color: tokens.onSurfaceVariant }}>
           Aguardando configuração de <code>GOOGLE_OAUTH_CLIENT_ID</code> no servidor para ativar a confirmação via Google.
