@@ -160,7 +160,17 @@ export const ProfileConnectionsCard: React.FC<{
   const cardRadius = isMaterialYou ? 18 : 12;
 
   return (
-    <ExpressiveSegmentedCard index={0} total={1} style={{ padding: '18px 18px' }}>
+    <ExpressiveSegmentedCard
+      index={0}
+      total={1}
+      style={{
+        padding: '16px 16px',
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
         <div
           style={{
@@ -245,7 +255,7 @@ export const ProfileConnectionsCard: React.FC<{
                 overflow: 'hidden',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: '1 1 0%' }}>
                 <span
                   style={{
                     width: 38,
@@ -253,15 +263,16 @@ export const ProfileConnectionsCard: React.FC<{
                     borderRadius: isMaterialYou ? 13 : 10,
                     backgroundColor: `${prov.accent}24`,
                     color: prov.accent,
-                    display: 'grid',
-                    placeItems: 'center',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     flexShrink: 0,
                   }}
                 >
                   {prov.icon}
                 </span>
 
-                <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ minWidth: 0, flex: '1 1 0%', overflow: 'hidden' }}>
                   <div
                     style={{
                       display: 'flex',

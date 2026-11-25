@@ -1,22 +1,50 @@
-import React from 'react';
+import React, { useId } from 'react';
 
 /**
  * Official brand marks for nominative identification of Spotify & Discord OAuth
  * integrations (permitted under Spotify Design Guidelines & Discord Branding Guidelines
  * when used strictly to identify their own connected services/buttons).
  */
-export const SpotifyIcon: React.FC<{ size?: number }> = ({ size = 18 }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    aria-hidden="true"
-    style={{ display: 'block', flexShrink: 0 }}
-  >
-    <path d="M12 1.5C6.201 1.5 1.5 6.201 1.5 12S6.201 22.5 12 22.5 22.5 17.799 22.5 12 17.799 1.5 12 1.5zm4.815 15.146a.748.748 0 0 1-1.029.247c-2.818-1.722-6.365-2.111-10.542-1.157a.748.748 0 0 1-.334-1.459c4.571-1.045 8.493-.595 11.658 1.34a.748.748 0 0 1 .247 1.029zm1.466-3.261a.936.936 0 0 1-1.287.308c-3.225-1.982-8.142-2.556-11.957-1.398a.936.936 0 0 1-.543-1.791c4.358-1.322 9.776-.682 13.479 1.594.44.27.578.847.308 1.287zm.126-3.396C14.54 7.693 8.159 7.482 4.467 8.603a1.123 1.123 0 1 1-.651-2.149c4.239-1.287 11.285-1.038 15.738 1.605a1.123 1.123 0 0 1-1.147 1.93z" />
-  </svg>
-);
+export const SpotifyIcon: React.FC<{ size?: number }> = ({ size = 18 }) => {
+  const maskId = `spotify-wave-mask-${useId().replace(/:/g, '')}`;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      style={{ display: 'block', flexShrink: 0 }}
+    >
+      <defs>
+        <mask id={maskId}>
+          <rect width="24" height="24" fill="white" />
+          <path
+            d="M6.4 9.55C10.1 8.45 14.9 8.75 18.1 10.65"
+            fill="none"
+            stroke="black"
+            strokeWidth="1.95"
+            strokeLinecap="round"
+          />
+          <path
+            d="M7.3 12.9C10.4 11.95 14.3 12.25 16.95 13.85"
+            fill="none"
+            stroke="black"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+          />
+          <path
+            d="M8.1 16.0C10.6 15.25 13.7 15.5 15.85 16.8"
+            fill="none"
+            stroke="black"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </mask>
+      </defs>
+      <circle cx="12" cy="12" r="10.5" fill="currentColor" mask={`url(#${maskId})`} />
+    </svg>
+  );
+};
 
 export const DiscordIcon: React.FC<{ size?: number }> = ({ size = 18 }) => (
   <svg
