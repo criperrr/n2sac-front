@@ -74,10 +74,13 @@ public class ApkPreloadJobService extends JobService {
 
         JSONObject data = new JSONObject(jsonText);
         String apkVersion = data.optString("apkVersion", "").trim();
-        if (apkVersion.isEmpty()) {
-            apkVersion = data.optString("version", "").trim();
+        String apkSha256 = data.optString("apkSha256", "").trim();
+        // Never attempt background APK downloads without a verified 64-hex SHA-256 checksum
+        // (protects against OTA-only deploys or incomplete release metadata).
+        if (apkVersion.isEmpty() || !apkSha256.matches("(?i)^[0-9a-f]{64}$")) {
+            return;
         }
-        if (apkVersion.isEmpty() || ApkUpdateCache.compareSemver(apkVersion, installed) <= 0) {
+        if (ApkUpdateCache.compareSemver(apkVersion, installed) <= 0) {
             // Up to date — purge any stale cached APK.
             ApkUpdateCache.getVerifiedCachedMeta(this, installed);
             return;
@@ -89,7 +92,6 @@ public class ApkPreloadJobService extends JobService {
                 || rawUrl.startsWith("https://objects.githubusercontent.com/"))
                 ? rawUrl
                 : (GITHUB_RELEASES_DOWNLOAD_BASE + "/v" + cleanVer + "/n2sac-" + cleanVer + ".apk");
-        String apkSha256 = data.optString("apkSha256", "").trim();
 
         ApkUpdateCache.downloadAndVerify(this, apkUrl, apkSha256, apkVersion, null);
         Log.i(TAG, "Silently preloaded & verified APK v" + apkVersion + " in background.");

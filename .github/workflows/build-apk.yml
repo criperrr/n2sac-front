@@ -86,12 +86,14 @@ jobs:
         id: meta
         run: |
           set -euo pipefail
-          VERSION="$(node -p "require('./package.json').version.trim()")"
+          GRADLE_VER="$(awk -F'"' '/versionName/{print $2; exit}' android/app/build.gradle | tr -d '[:space:]')"
+          PKG_VER="$(node -p "require('./package.json').version.trim()")"
+          VERSION="${GRADLE_VER:-${PKG_VER}}"
           TAG="v${VERSION}"
           echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
           echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
           echo "apk_name=n2sac-${VERSION}.apk" >> "${GITHUB_OUTPUT}"
-          echo "Building n²sac ${TAG}"
+          echo "Building n²sac APK ${TAG} (build.gradle=${GRADLE_VER:-none}, package.json=${PKG_VER})"
 
       - name: Materialize ephemeral signing secrets (mode 600)
         id: secrets
@@ -270,13 +272,22 @@ jobs:
             const p = process.env.TMP_VER;
             let cur = {};
             try { cur = JSON.parse(fs.readFileSync(p, "utf8")); } catch {}
+            const cmp = (a, b) => {
+              const pa = String(a || "").replace(/^v/i, "").split(".").map((n) => parseInt(n, 10) || 0);
+              const pb = String(b || "").replace(/^v/i, "").split(".").map((n) => parseInt(n, 10) || 0);
+              for (let i = 0; i < 3; i++) { if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) - (pb[i] || 0); }
+              return 0;
+            };
+            const apkVer = process.env.VERSION;
+            // Preserve a newer Web OTA version if one is already live on n2sac-web
+            const webVer = cur.version && cmp(cur.version, apkVer) > 0 ? cur.version : apkVer;
             const next = {
               ...cur,
-              version: process.env.VERSION,
+              version: webVer,
               buildId: process.env.BUILD_ID,
               channel: cur.channel || "ota",
               important: process.env.IMPORTANT === "true",
-              apkVersion: process.env.VERSION,
+              apkVersion: apkVer,
               apkUrl: process.env.APK_URL,
               apkSha256: process.env.APK_SHA256,
               notes: process.env.NOTES || cur.notes || "",

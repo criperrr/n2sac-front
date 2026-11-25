@@ -37,7 +37,7 @@ export async function syncBackgroundUpdateState(): Promise<void> {
       details: {
         buildId: localStorage.getItem(LAST_BUILD_ID_KEY) ?? '',
         otaVersion: localStorage.getItem(INSTALLED_OTA_VERSION_KEY) ?? '',
-        nativeVersion: CURRENT_APP_VERSION,
+        nativeVersion: getInstalledNativeVersion(),
       },
     });
   } catch {
@@ -141,6 +141,12 @@ export interface ServerVersionSnapshot {
   apkVersion: string | null;
 }
 
+const SHA256_HEX_RE = /^[0-9a-f]{64}$/i;
+
+function isValidSha256(value: string | undefined | null): boolean {
+  return Boolean(value && SHA256_HEX_RE.test(value.trim()));
+}
+
 export async function fetchLatestServerVersion(): Promise<ServerVersionSnapshot> {
   try {
     const base = getApiBaseUrl();
@@ -149,9 +155,16 @@ export async function fetchLatestServerVersion(): Promise<ServerVersionSnapshot>
       cache: 'no-store',
     });
     if (!res.ok) return { version: null, apkVersion: null };
-    const data = (await res.json()) as { version?: string; apkVersion?: string };
+    const data = (await res.json()) as {
+      version?: string;
+      apkVersion?: string;
+      apkSha256?: string;
+    };
     const version = (data.version ?? '').trim() || null;
-    const apkVersion = (data.apkVersion ?? '').trim() || null;
+    // Only report apkVersion when backed by a real published SHA-256 checksum
+    // so OTA-only releases never advertise a non-existent phantom APK.
+    const rawApkVersion = (data.apkVersion ?? '').trim() || null;
+    const apkVersion = rawApkVersion && isValidSha256(data.apkSha256) ? rawApkVersion : null;
     return { version, apkVersion };
   } catch {
     return { version: null, apkVersion: null };
@@ -269,19 +282,25 @@ export async function checkServerOtaUpdate(): Promise<NativeUpdateInfo | null> {
     const remoteBuildId = (data.buildId ?? '').trim();
     const prevBuildId = localStorage.getItem(LAST_BUILD_ID_KEY);
 
-    // 1) Important native APK update distributed via GitHub Releases (Android only).
-    if (data.important && Capacitor.isNativePlatform()) {
-      const targetApkVersion = (data.apkVersion ?? remoteVersion).trim();
+    // 1) Published native APK update distributed via GitHub Releases (Android only).
+    //    Strictly requires a real 64-hex SHA-256 checksum so OTA-only deploys can never
+    //    trigger a broken 404 APK download.
+    if (Capacitor.isNativePlatform()) {
+      const targetApkVersion = (data.apkVersion ?? '').trim();
+      const apkSha256 = (data.apkSha256 ?? '').trim().toLowerCase();
       const installedNative = getInstalledNativeVersion();
-      if (targetApkVersion && compareSemver(targetApkVersion, installedNative) > 0) {
+      if (
+        targetApkVersion &&
+        isValidSha256(apkSha256) &&
+        compareSemver(targetApkVersion, installedNative) > 0
+      ) {
         const resolvedUrl = resolveApkUrlToGitHub(data.apkUrl, targetApkVersion);
         const releaseTag = targetApkVersion.replace(/^v/i, '');
-        const apkSha256 = (data.apkSha256 ?? '').trim().toLowerCase() || undefined;
         const cached = getCachedNativeApkInfo();
         const cachedReady = Boolean(
           cached &&
             compareSemver(cached.version, targetApkVersion) >= 0 &&
-            (!apkSha256 || cached.sha256.toLowerCase() === apkSha256)
+            cached.sha256.toLowerCase() === apkSha256
         );
         return {
           version: targetApkVersion,
@@ -289,7 +308,7 @@ export async function checkServerOtaUpdate(): Promise<NativeUpdateInfo | null> {
           downloadUrl: resolvedUrl,
           releaseUrl: `${GITHUB_RELEASES_BASE}/tag/v${releaseTag}`,
           buildId: remoteBuildId || undefined,
-          important: true,
+          important: Boolean(data.important),
           apkSha256,
           cachedReady,
           notes:

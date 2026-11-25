@@ -106,6 +106,7 @@ docker save n2sac-web:latest | gzip | ssh -T -o LogLevel=ERROR "${REMOTE_USER}@$
   fi
 "
 
-echo "[deploy-web] Verifying /version.json..."
-curl -fsS "http://${REMOTE_HOST}:8080/version.json" && echo ""
-echo "[deploy-web] Done! Web live at http://${REMOTE_HOST}:8080"
+PUBLIC_URL="${N2SAC_PUBLIC_URL:-https://notebook-server.tailddd6bf.ts.net}"
+echo "[deploy-web] Verifying ${PUBLIC_URL}/version.json..."
+curl -fsS --max-time 10 "${PUBLIC_URL}/version.json" && echo ""
+echo "[deploy-web] Done! Web live at ${PUBLIC_URL}"

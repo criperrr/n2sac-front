@@ -1,11 +1,14 @@
 /**
- * Single source of truth for the app version (keep in sync with `package.json`,
- * `android/app/build.gradle` versionName and the OTA `public/version.json`).
+ * Single source of truth for the web/OTA bundle version: injected at build time
+ * directly from `package.json` by `vite.config.ts` (`__APP_VERSION__`).
  *
- * Numbering restarted at 1.0.0 for the first stable release ("n²sac v1");
- * pre-release builds used 2.0.x.
+ * Native Android APK version is tracked independently via `PackageManager`
+ * (`getInstalledNativeVersion()` in `src/updater/autoUpdater.ts`).
  */
-export const APP_VERSION = '1.6.4';
+declare const __APP_VERSION__: string | undefined;
+
+export const APP_VERSION: string =
+  typeof __APP_VERSION__ === 'string' && __APP_VERSION__.trim() ? __APP_VERSION__.trim() : '0.0.0';
 
 /** Human label: `n²sac v1` for x.0.0, otherwise the full number (`n²sac v1.0.3`). */
 export function formatVersionLabel(version: string = APP_VERSION): string {

@@ -1,10 +1,10 @@
 {
-  "version": "1.6.4",
-  "buildId": "2026-11-25T00:46:18Z",
+  "version": "1.6.5",
+  "buildId": "2026-11-25T01:23:31Z",
   "channel": "ota",
   "important": false,
-  "apkVersion": "1.6.4",
-  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.4/n2sac-1.6.4.apk",
-  "apkSha256": "",
-  "notes": "Nova tela de conexões: conecte Spotify e Discord com 1 toque pelo login oficial."
+  "apkVersion": "1.6.2",
+  "apkUrl": "https://github.com/criperrr/n2sac/releases/download/v1.6.2/n2sac-1.6.2.apk",
+  "apkSha256": "4300e01f33c8c685a6475c113714247d5edf9501cf98abbff085e0b9005895f7",
+  "notes": "Sistema de atualizações mais confiável e correções gerais."
 }
