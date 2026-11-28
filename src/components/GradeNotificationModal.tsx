@@ -232,6 +232,8 @@ export const GradeNotificationModal: React.FC<{
   }, [resolvedItems]);
 
   const isWhileAway = detail.source === 'while_away';
+  const allRecoveryOnly =
+    resolvedItems.length > 0 && resolvedItems.every((i) => i.highlight.event_kind === 'recovery_status');
 
   // 1. Single-subject notification: open the rich `SubjectDetailsModal` directly.
   if (resolvedItems.length === 1) {
@@ -320,9 +322,13 @@ export const GradeNotificationModal: React.FC<{
                   : `Nova Nota • ${detail.classCode || headerClass}`
             }
             title={
-              resolvedItems.length >= 2
-                ? `${resolvedItems.length} novas notas lançadas`
-                : resolvedItems[0]?.highlight.subject || detail.title || 'Novas notas lançadas'
+              allRecoveryOnly
+                ? resolvedItems.length >= 2
+                  ? `${resolvedItems.length} atualizações de recuperação`
+                  : `Recuperação • ${resolvedItems[0]?.highlight.subject || detail.title || 'Status atualizado'}`
+                : resolvedItems.length >= 2
+                  ? `${resolvedItems.length} novas notas lançadas`
+                  : resolvedItems[0]?.highlight.subject || detail.title || 'Novas notas lançadas'
             }
             onClose={() => close()}
           />
@@ -341,14 +347,18 @@ export const GradeNotificationModal: React.FC<{
                 lineHeight: 1.35,
               }}
             >
-              {resolvedItems.length >= 2
-                ? 'Algumas notas novas saíram enquanto você estava fora.'
-                : 'Uma nova nota saiu enquanto você estava fora.'}
+              {allRecoveryOnly
+                ? resolvedItems.length >= 2
+                  ? 'O status de recuperação mudou em algumas matérias enquanto você estava fora.'
+                  : 'O status de recuperação mudou enquanto você estava fora.'
+                : resolvedItems.length >= 2
+                  ? 'Algumas notas novas saíram enquanto você estava fora.'
+                  : 'Uma nova nota saiu enquanto você estava fora.'}
             </div>
           )}
 
-          {/* Aggregate KPI strip when 2+ grades accumulated */}
-          {resolvedItems.length >= 2 && (
+          {/* Aggregate KPI strip when 2+ grades accumulated (hidden for recovery-status-only updates) */}
+          {resolvedItems.length >= 2 && !allRecoveryOnly && (
             <div
               style={{
                 display: 'grid',
@@ -409,7 +419,7 @@ export const GradeNotificationModal: React.FC<{
                   marginBottom: 8,
                 }}
               >
-                Resumo: Notas Novas e Médias
+                {allRecoveryOnly ? 'Resumo: Status de Recuperação' : 'Resumo: Notas Novas e Médias'}
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

@@ -46,6 +46,7 @@ import { AnimatedImageLightbox } from '../components/classrooms/AnimatedImageLig
 import { RepresentativesPage } from '../components/classrooms/RepresentativesPage';
 import { AnnouncementComposerPage } from '../components/classrooms/AnnouncementComposerPage';
 import { ClassroomChatScreen } from '../components/classrooms/ClassroomChatScreen';
+import { DevAnnouncementsPanel } from '../components/classrooms/DevAnnouncementsPanel';
 import { formatFullDate, splitText } from '../components/social/chat/chatModel';
 import { openExternalUrl } from '../platform/openExternal';
 import { compressImageToDataUrl } from '../utils/imageCompress';
@@ -56,6 +57,10 @@ import {
   MAX_VISIBLE_TAGS,
   tagSearchKey,
 } from '../utils/announcementTags';
+import {
+  TransparencyTriggerButton,
+  TurmaTransparencyModal,
+} from '../components/TransparencyModal';
 
 const QUICK_REACTIONS = ['👍', '👀', '❤️', '🔥'];
 
@@ -95,10 +100,13 @@ export const TurmaScreen: React.FC<{
   const [tagFilter, setTagFilter] = useState<'all' | AnnouncementCategory>('all');
   const [tagsMenuOpen, setTagsMenuOpen] = useState(false);
   const [tagSearch, setTagSearch] = useState('');
+  const [announcementChannel, setAnnouncementChannel] = useState<'turma' | 'dev'>('turma');
+  const [devUnreadCount, setDevUnreadCount] = useState(0);
 
   const [electionOpen, setElectionOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [showTransparency, setShowTransparency] = useState(false);
   const [savingAppearance, setSavingAppearance] = useState(false);
   const [activeChat, setActiveChat] = useState<{
     kind: ClassroomChannelKind;
@@ -291,6 +299,86 @@ export const TurmaScreen: React.FC<{
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: isMaterialYou ? 16 : 12 }}>
+      {/* Top Channel Selector: Anúncios da Turma (default) vs Desenvolvimento */}
+      <div
+        role="tablist"
+        aria-label="Canal de anúncios"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 6,
+          padding: 4,
+          borderRadius: 999,
+          backgroundColor: tokens.surfaceContainer,
+          border: `1px solid ${tokens.outlineVariant}66`,
+        }}
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={announcementChannel === 'turma'}
+          onClick={() => setAnnouncementChannel('turma')}
+          style={{
+            padding: '9px 14px',
+            borderRadius: 999,
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: '0.84rem',
+            backgroundColor: announcementChannel === 'turma' ? tokens.primary : 'transparent',
+            color: announcementChannel === 'turma' ? tokens.onPrimary : tokens.onSurfaceVariant,
+            transition: 'all 160ms ease',
+          }}
+        >
+          Anúncios da Turma
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={announcementChannel === 'dev'}
+          onClick={() => setAnnouncementChannel('dev')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            padding: '9px 14px',
+            borderRadius: 999,
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: '0.84rem',
+            backgroundColor: announcementChannel === 'dev' ? tokens.primary : 'transparent',
+            color: announcementChannel === 'dev' ? tokens.onPrimary : tokens.onSurfaceVariant,
+            transition: 'all 160ms ease',
+          }}
+        >
+          Desenvolvimento
+          {devUnreadCount > 0 && announcementChannel !== 'dev' && (
+            <span
+              style={{
+                padding: '1px 7px',
+                borderRadius: 999,
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                backgroundColor: tokens.error,
+                color: tokens.onError,
+              }}
+            >
+              {devUnreadCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {announcementChannel === 'dev' ? (
+        <DevAnnouncementsPanel
+          token={token}
+          refreshSignal={refreshSignal}
+          onUnreadCountChange={setDevUnreadCount}
+        />
+      ) : (
+        <>
       {/* 1. ROOM HERO CARD (Banner + Room Avatar + Representatives) */}
       <section
         style={{
@@ -410,14 +498,20 @@ export const TurmaScreen: React.FC<{
               )}
             </div>
 
-            <EnhancedMorphButton
-              size="sm"
-              variant="tonal"
-              icon={<Crown size={14} />}
-              onClick={() => setElectionOpen(true)}
-            >
-              Representantes ({overview.representatives.length}/{room.max_representatives})
-            </EnhancedMorphButton>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <TransparencyTriggerButton
+                label="Como funciona?"
+                onClick={() => setShowTransparency(true)}
+              />
+              <EnhancedMorphButton
+                size="sm"
+                variant="tonal"
+                icon={<Crown size={14} />}
+                onClick={() => setElectionOpen(true)}
+              >
+                Representantes ({overview.representatives.length}/{room.max_representatives})
+              </EnhancedMorphButton>
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -1291,6 +1385,12 @@ export const TurmaScreen: React.FC<{
           alt="Imagem do anúncio"
           onClose={() => setLightboxUrl(null)}
         />
+      )}
+
+      {showTransparency && (
+        <TurmaTransparencyModal onClose={() => setShowTransparency(false)} />
+      )}
+        </>
       )}
     </div>
   );

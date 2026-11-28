@@ -11,7 +11,7 @@ import {
   hasSeenGoogleNamePrompt,
   markGoogleNamePromptSeen,
 } from './components/GoogleNamePromptModal';
-import { FeedbackSettingsSection } from './components/settings/FeedbackSettings';
+import { FeedbackQuickHubModal, FeedbackSettingsSection } from './components/settings/FeedbackSettings';
 import { NotificationSettingsSection } from './components/settings/NotificationSettings';
 import {
   consumeNativeAccumulatedGrades,
@@ -46,6 +46,8 @@ import type {
   AccountProfileResponse,
   AllYearsResponse,
   AtrasoRecord,
+  FeedbackArea,
+  FeedbackKind,
   FichaAvaliacaoEntry,
   HomeInfo,
   LoginResponse,
@@ -61,6 +63,8 @@ import { MorphingLoadingState } from './components/expressive/ShapeMorph';
 import { useM3Theme } from './theme/ThemeContext';
 import { useBackLayer } from './navigation/backStack';
 import { useTabSwipeGesture } from './navigation/useTabSwipeGesture';
+import { WifiOff } from 'lucide-react';
+import { formatOfflineAge, useOnlineStatus } from './offline/offlineStore';
 import { canRunScreenTransition, runScreenTransition, type ScreenTransition } from './theme/viewTransition';
 
 const loadBoletimScreen = () =>
@@ -92,7 +96,10 @@ const LoginScreen = lazy(loadLoginScreen);
 const MANUAL_REFRESH_COOLDOWN_SECS = 60;
 
 export const App: React.FC = () => {
-  const { applyCourseClassCode } = useM3Theme();
+  const { applyCourseClassCode, tokens, isMaterialYou } = useM3Theme();
+  const isOnline = useOnlineStatus();
+  const prevOnlineRef = useRef<boolean>(isOnline);
+  const offlineWarmupAccountRef = useRef<number | null>(null);
   const [session, setSession] = useState<LoginResponse | null>(() => loadStoredSession());
   const [activeTab, setActiveTab] = useState<AppTabId>('boletim');
   // Configurações & Alertas/Sentinela are pages pushed above the current tab, so the active
@@ -100,6 +107,10 @@ export const App: React.FC = () => {
   // Back ALWAYS returns straight to where the user was.
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sentinelaOpen, setSentinelaOpen] = useState(false);
+  const [feedbackHub, setFeedbackHub] = useState<{ open: boolean; kind: FeedbackKind | null }>({
+    open: false,
+    kind: null,
+  });
   const settingsCloseRef = useRef<(() => void) | null>(null);
   const sentinelaCloseRef = useRef<(() => void) | null>(null);
   const tabSurfaceRef = useRef<HTMLDivElement>(null);
@@ -114,6 +125,15 @@ export const App: React.FC = () => {
   const [pageEntry, setPageEntry] = useState<
     'vt' | 'css' | 'axis-x-forward' | 'axis-x-backward' | 'swipe-next' | 'swipe-prev' | 'none'
   >('css');
+
+  useEffect(() => {
+    const onOpenFeedback = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ kind?: FeedbackKind }>).detail;
+      setFeedbackHub({ open: true, kind: detail?.kind ?? null });
+    };
+    window.addEventListener('n2sac:open-feedback', onOpenFeedback);
+    return () => window.removeEventListener('n2sac:open-feedback', onOpenFeedback);
+  }, []);
 
   // Preload lazy screen chunks during idle time after first paint so tab transitions
   // never stall on network chunk fetches or capture a Suspense fallback snapshot.
@@ -272,7 +292,31 @@ export const App: React.FC = () => {
     }, 3000);
   }, [cancelSharePromptTimer]);
   const [rankingPrefs, setRankingPrefs] = useState<RankingPreferences | null>(null);
+  const rankingPrefsLoadedAccountRef = useRef<number | null>(null);
   const [savingRankingConsent, setSavingRankingConsent] = useState(false);
+
+  // Fetch ranking preferences ONCE per login/session (for first-time consent modal & PrivacySettingsCard),
+  // instead of re-fetching on every background Sentinel boletim poll.
+  useEffect(() => {
+    if (!session) {
+      rankingPrefsLoadedAccountRef.current = null;
+      setRankingPrefs(null);
+      return;
+    }
+    if (rankingPrefsLoadedAccountRef.current === session.account_id) return;
+    rankingPrefsLoadedAccountRef.current = session.account_id;
+    let cancelled = false;
+    fetchRankingPreferences(session.token)
+      .then((prefs) => {
+        if (!cancelled) setRankingPrefs(prefs);
+      })
+      .catch(() => {
+        if (!cancelled) rankingPrefsLoadedAccountRef.current = null;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
   const [googleNamePrompt, setGoogleNamePrompt] = useState<{
     currentName: string;
     needsVerification: boolean;
@@ -381,6 +425,7 @@ export const App: React.FC = () => {
       setSession(null);
       setBoletim(null);
       setAccountProfile(null);
+      setRankingPrefs(null);
       setNextPollAt(null);
     });
   }, [session]);
@@ -392,15 +437,10 @@ export const App: React.FC = () => {
       setIsRefreshing(true);
 
       try {
-        const [boletimRes, profileRes, rankingPrefsRes] = await Promise.all([
+        const [boletimRes, profileRes] = await Promise.all([
           fetchBoletim(session.token, session.account_id, forceBackendRefresh),
           fetchAccountProfile(session.token).catch(() => null),
-          fetchRankingPreferences(session.token).catch(() => null),
         ]);
-
-        if (rankingPrefsRes) {
-          setRankingPrefs(rankingPrefsRes);
-        }
 
         setBoletim(boletimRes.data);
         setBoletimEtag(boletimRes.etag);
@@ -599,16 +639,9 @@ export const App: React.FC = () => {
         return;
       }
 
-      // 2. Ranking tab: reload the leaderboard, active peer comparison (if open), and ranking preferences
+      // 2. Ranking tab: reload the leaderboard & active peer comparison (also syncs `my_preferences`)
       if (activeTab === 'ranking') {
         setRankingRefreshSignal((n) => n + 1);
-        setIsRefreshing(true);
-        try {
-          const prefs = await fetchRankingPreferences(session.token).catch(() => null);
-          if (prefs) setRankingPrefs(prefs);
-        } finally {
-          setIsRefreshing(false);
-        }
         return;
       }
 
@@ -682,6 +715,32 @@ export const App: React.FC = () => {
     void refreshActiveTabData(false);
   }, [session, activeTab, refreshActiveTabData]);
 
+  // Gentle idle offline warmup (1x per session, refresh=false + ETag/304, zero NSAC scraping):
+  // populates Frequência & Home in IndexedDB so all core tabs work immediately if signal drops.
+  useEffect(() => {
+    if (!session || !isOnline) return;
+    if (offlineWarmupAccountRef.current === session.account_id) return;
+    const timer = window.setTimeout(() => {
+      offlineWarmupAccountRef.current = session.account_id;
+      void Promise.allSettled([
+        fetchHomeInfo(session.token, session.account_id, false).then((r) => setHomeInfo(r.data)),
+        fetchAtrasos(session.token, session.account_id, false).then((r) => setAtrasos(r.data)),
+        fetchSaidas(session.token, session.account_id, false).then((r) => setSaidas(r.data)),
+        fetchFichaList(session.token, session.account_id, false).then((r) => setFichas(r.data)),
+      ]);
+    }, 2800);
+    return () => window.clearTimeout(timer);
+  }, [session, isOnline]);
+
+  // Auto-revalidate active data seamlessly when recovering from offline -> online.
+  useEffect(() => {
+    const wasOnline = prevOnlineRef.current;
+    prevOnlineRef.current = isOnline;
+    if (!wasOnline && isOnline && session) {
+      void refreshActiveTabData(false);
+    }
+  }, [isOnline, session, refreshActiveTabData]);
+
   const handleManualRefresh = useCallback(
     (forceBackendRefresh = false) => {
       if (forceBackendRefresh) {
@@ -750,8 +809,36 @@ export const App: React.FC = () => {
             !settingsOpen && !sentinelaOpen && (activeTab === 'boletim' || activeTab === 'frequencia')
           )
         }
+        onOpenFeedback={() => setFeedbackHub({ open: true, kind: null })}
         onLogout={handleLogout}
       >
+        {!isOnline && (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+              marginBottom: 12,
+              padding: '9px 14px',
+              borderRadius: isMaterialYou ? 18 : 10,
+              backgroundColor: tokens.gradeWarningContainer,
+              color: tokens.onGradeWarningContainer,
+              border: `1px solid ${tokens.outlineVariant}`,
+              fontSize: '0.78rem',
+              fontWeight: 600,
+            }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              <WifiOff size={15} style={{ flexShrink: 0 }} />
+              <span>
+                Modo offline • Exibindo dados salvos ({formatOfflineAge(cachedAt)})
+              </span>
+            </span>
+          </div>
+        )}
         <div
           key={activeTab}
           ref={tabSurfaceRef}
@@ -833,6 +920,8 @@ export const App: React.FC = () => {
                 onLogout={handleLogout}
                 refreshSignal={profileRefreshSignal}
                 onRefreshingChange={setTabChildRefreshing}
+                rankingPreferences={rankingPrefs}
+                onRankingPreferencesUpdated={setRankingPrefs}
               />
             )}
           </Suspense>
@@ -899,6 +988,30 @@ export const App: React.FC = () => {
         <ShareAppPromptModal
           open={sharePromptOpen}
           onClose={() => setSharePromptOpen(false)}
+        />
+        <FeedbackQuickHubModal
+          open={feedbackHub.open}
+          directKind={feedbackHub.kind}
+          initialArea={
+            (settingsOpen
+              ? 'configuracoes'
+              : sentinelaOpen
+                ? 'sentinela'
+                : activeTab === 'boletim'
+                  ? 'boletim'
+                  : activeTab === 'ranking'
+                    ? 'ranking'
+                    : activeTab === 'frequencia'
+                      ? 'frequencia'
+                      : activeTab === 'profile'
+                        ? 'social'
+                        : 'geral') as FeedbackArea
+          }
+          token={session.token}
+          accountProfile={accountProfile}
+          detectedClassCode={effectiveClassCode}
+          onClose={() => setFeedbackHub({ open: false, kind: null })}
+          onOpenSettingsHistory={() => setSettingsOpen(true)}
         />
         <GoogleNamePromptModal
           open={Boolean(

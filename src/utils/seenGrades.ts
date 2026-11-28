@@ -151,14 +151,14 @@ export function detectNewGradesAndUpdateSeen(
             old.recovered !== bi.personal.recovered
         );
         const isNew = !old;
-        const isUpdated = Boolean(
+        const gradeChanged = isNew || gradesDiffer(old.grade, bi.personal.grade);
+        const recoveryStatusChanged = Boolean(
           old &&
-            (gradesDiffer(old.grade, bi.personal.grade) ||
-              Boolean(old.recovery) !== currHasRecovery ||
+            (Boolean(old.recovery) !== currHasRecovery ||
               recoveryCodeChanged ||
               recoveredChanged)
         );
-        if (!isNew && !isUpdated) continue;
+        if (!gradeChanged && !recoveryStatusChanged) continue;
 
         const prevPosted = sortedBims
           .filter((b) => b.bimester < bi.bimester && isBimesterPosted(b) && b.personal.grade !== null)
@@ -172,6 +172,8 @@ export function detectNewGradesAndUpdateSeen(
           class_average: bi.class.averageGrade,
           previous_grade: prevPosted?.personal.grade ?? null,
           recovery: Boolean(bi.personal.recovery),
+          event_kind: !gradeChanged && recoveryStatusChanged ? 'recovery_status' : 'grade',
+          recovery_code: currRecCode,
         });
       }
     }

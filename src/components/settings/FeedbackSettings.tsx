@@ -518,6 +518,155 @@ export const FeedbackSettingsSection: React.FC<{
   );
 };
 
+/**
+ * Global 1-tap Hub Modal for "Reportar bug / Enviar sugestão / Enviar feedback".
+ * Accessible from the top bar (mobile), navigation rail (desktop), and Dev announcements tab.
+ */
+export const FeedbackQuickHubModal: React.FC<{
+  open: boolean;
+  directKind?: FeedbackKind | null;
+  initialArea?: FeedbackArea | null;
+  token: string;
+  accountProfile: AccountProfileResponse | null;
+  detectedClassCode: string | null;
+  onClose: () => void;
+  onOpenSettingsHistory?: () => void;
+}> = ({
+  open,
+  directKind = null,
+  initialArea = null,
+  token,
+  accountProfile,
+  detectedClassCode,
+  onClose,
+  onOpenSettingsHistory,
+}) => {
+  const { tokens } = useM3Theme();
+  const [pickedKind, setPickedKind] = useState<FeedbackKind | null>(directKind);
+
+  useEffect(() => {
+    if (open) {
+      setPickedKind(directKind ?? null);
+    } else {
+      setPickedKind(null);
+    }
+  }, [open, directKind]);
+
+  if (!open) return null;
+
+  if (pickedKind) {
+    return (
+      <FeedbackComposerPage
+        token={token}
+        initialKind={pickedKind}
+        initialArea={initialArea}
+        accountProfile={accountProfile}
+        detectedClassCode={detectedClassCode}
+        onClose={() => {
+          setPickedKind(null);
+          onClose();
+        }}
+        onSubmitted={() => {}}
+      />
+    );
+  }
+
+  const rows: Array<{
+    kind: FeedbackKind;
+    icon: React.ReactNode;
+    containerColor: string;
+    contentColor: string;
+  }> = [
+    {
+      kind: 'bug',
+      icon: <Bug size={19} />,
+      containerColor: tokens.errorContainer,
+      contentColor: tokens.onErrorContainer,
+    },
+    {
+      kind: 'suggestion',
+      icon: <Lightbulb size={19} />,
+      containerColor: tokens.primaryContainer,
+      contentColor: tokens.onPrimaryContainer,
+    },
+    {
+      kind: 'feedback',
+      icon: <MessageSquareHeart size={19} />,
+      containerColor: tokens.tertiaryContainer,
+      contentColor: tokens.onTertiaryContainer,
+    },
+  ];
+
+  return (
+    <ExpressiveModal ariaLabel="Ajuda e Melhorias" onClose={onClose} maxWidth={520}>
+      {(close) => (
+        <>
+          <ModalHeader
+            icon={<MessageSquareHeart size={20} />}
+            eyebrow="Ajuda & Melhorias"
+            title="Fale com o dev do n²sac"
+            onClose={() => close()}
+          />
+          <p style={{ margin: '10px 0 14px', fontSize: '0.84rem', lineHeight: 1.5, color: tokens.onSurfaceVariant }}>
+            Achou algo quebrado, teve uma ideia boa ou quer mandar um feedback sincero? Vai direto pra fila do dev e você acompanha o status do seu envio.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {rows.map((row, index) => (
+              <ExpressiveSegmentedCard
+                key={row.kind}
+                index={index}
+                total={rows.length}
+                onClick={() => setPickedKind(row.kind)}
+                style={{ padding: '15px 16px', cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+                  <IconShapeContainer
+                    size={40}
+                    containerColor={row.containerColor}
+                    contentColor={row.contentColor}
+                  >
+                    {row.icon}
+                  </IconShapeContainer>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.94rem' }}>{KIND_META[row.kind].label}</div>
+                    <div style={{ fontSize: '0.76rem', color: tokens.onSurfaceVariant, marginTop: 2, lineHeight: 1.35 }}>
+                      {KIND_META[row.kind].subtitle}
+                    </div>
+                  </div>
+                  <ChevronRight size={17} style={{ color: tokens.onSurfaceVariant, flexShrink: 0 }} />
+                </div>
+              </ExpressiveSegmentedCard>
+            ))}
+          </div>
+
+          {onOpenSettingsHistory && (
+            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  close();
+                  onOpenSettingsHistory();
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: tokens.primary,
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  padding: '4px 6px',
+                }}
+              >
+                Ver meus envios anteriores →
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </ExpressiveModal>
+  );
+};
+
 interface ScreenshotDraft {
   id: string;
   dataUrl: string;
@@ -527,17 +676,18 @@ interface ScreenshotDraft {
 const FeedbackComposerPage: React.FC<{
   token: string;
   initialKind: FeedbackKind;
+  initialArea?: FeedbackArea | null;
   accountProfile: AccountProfileResponse | null;
   detectedClassCode: string | null;
   onClose: () => void;
   onSubmitted: (created: CreatedFeedbackResponse) => void;
-}> = ({ token, initialKind, accountProfile, detectedClassCode, onClose, onSubmitted }) => {
+}> = ({ token, initialKind, initialArea = null, accountProfile, detectedClassCode, onClose, onSubmitted }) => {
   const { tokens, isMaterialYou, settings, effectiveIsDark } = useM3Theme();
   const pageCloseRef = useRef<(() => void) | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [kind, setKind] = useState<FeedbackKind>(initialKind);
-  const [area, setArea] = useState<FeedbackArea | null>(null);
+  const [area, setArea] = useState<FeedbackArea | null>(initialArea);
   const [severity, setSeverity] = useState<BugSeverity | null>(null);
   const [frequency, setFrequency] = useState<BugFrequency | null>(null);
   const [rating, setRating] = useState<number | null>(null);

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Crown, UserRound } from 'lucide-react';
-import { loadProfileImage } from '../../api/nsacClient';
+import { getCachedProfileImage, loadProfileImage } from '../../api/nsacClient';
 import { resolveAvatarRadius } from '../../theme/materialYou';
 import { useM3Theme } from '../../theme/ThemeContext';
 import { useProfileViewer, type ProfilePreview } from './ProfileViewer';
@@ -15,18 +15,24 @@ function initialsOf(name: string): string {
 /**
  * Server path (needs the token) → object URL; `data:`/`blob:` sources are used as they are.
  * Returns `undefined` while loading and `null` when there is no image (or it failed).
+ * Pass `enabled = false` to defer network fetches until an avatar nears the viewport.
  */
-function useProfileImage(path: string | null | undefined): string | null | undefined {
+function useProfileImage(path: string | null | undefined, enabled = true): string | null | undefined {
   const { token } = useProfileViewer();
   const direct = path && /^(data|blob):/.test(path) ? path : null;
-  const [url, setUrl] = useState<string | null | undefined>(direct ?? (path ? undefined : null));
+  const cached = !direct && path ? getCachedProfileImage(path) : null;
+  const immediate = direct ?? cached;
+  const [url, setUrl] = useState<string | null | undefined>(immediate ?? (path ? undefined : null));
   useEffect(() => {
-    if (direct) {
-      setUrl(direct);
+    if (immediate) {
+      setUrl(immediate);
       return;
     }
     if (!path || !token) {
       setUrl(null);
+      return;
+    }
+    if (!enabled) {
       return;
     }
     setUrl(undefined);
@@ -37,11 +43,43 @@ function useProfileImage(path: string | null | undefined): string | null | undef
     return () => {
       cancelled = true;
     };
-  }, [path, token, direct]);
+  }, [path, token, immediate, enabled]);
   return url;
 }
 
 export { useProfileImage };
+
+const avatarVisibilityCallbacks = new WeakMap<Element, () => void>();
+let sharedAvatarObserver: IntersectionObserver | null = null;
+
+function observeAvatarVisibility(el: Element, onVisible: () => void): () => void {
+  if (typeof IntersectionObserver === 'undefined') {
+    onVisible();
+    return () => {};
+  }
+  if (!sharedAvatarObserver) {
+    sharedAvatarObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const cb = avatarVisibilityCallbacks.get(entry.target);
+          if (cb) {
+            avatarVisibilityCallbacks.delete(entry.target);
+            sharedAvatarObserver?.unobserve(entry.target);
+            cb();
+          }
+        }
+      },
+      { rootMargin: '220px 0px' }
+    );
+  }
+  avatarVisibilityCallbacks.set(el, onVisible);
+  sharedAvatarObserver.observe(el);
+  return () => {
+    avatarVisibilityCallbacks.delete(el);
+    sharedAvatarObserver?.unobserve(el);
+  };
+}
 
 /**
  * Profile photo (or initials) with an optional ranking badge: `#N` on the photo's corner, or a
@@ -60,7 +98,22 @@ export const ProfileAvatar: React.FC<{
 }> = ({ name, image, size = 44, rank = null, highlight = false, profile }) => {
   const { tokens, settings } = useM3Theme();
   const { openProfile } = useProfileViewer();
-  const url = useProfileImage(image);
+  const containerRef = useRef<HTMLSpanElement>(null);
+  const needsLazyLoad = Boolean(
+    image && !/^(data|blob):/.test(image) && !getCachedProfileImage(image)
+  );
+  const [inView, setInView] = useState<boolean>(
+    () => !needsLazyLoad || typeof IntersectionObserver === 'undefined'
+  );
+
+  useEffect(() => {
+    if (!needsLazyLoad || inView) return;
+    const el = containerRef.current;
+    if (!el) return;
+    return observeAvatarVisibility(el, () => setInView(true));
+  }, [needsLazyLoad, inView]);
+
+  const url = useProfileImage(image, inView);
   // Keyed by URL: an already-decoded image can fire onLoad before any effect would reset a flag.
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   const loaded = Boolean(url) && loadedUrl === url;
@@ -73,6 +126,7 @@ export const ProfileAvatar: React.FC<{
 
   const content = (
     <span
+      ref={containerRef}
       style={{
         position: 'relative',
         width: size,

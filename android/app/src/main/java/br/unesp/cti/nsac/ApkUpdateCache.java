@@ -233,20 +233,22 @@ public final class ApkUpdateCache {
                 );
             }
 
-            File dest = getApkFile(context);
-            deleteQuietly(dest);
-            if (!tmp.renameTo(dest)) {
-                deleteQuietly(tmp);
-                throw new Exception("Falha ao mover APK verificado para o cache.");
-            }
-
             JSONObject meta = new JSONObject();
             meta.put("version", version != null ? version.trim() : "");
             meta.put("sha256", actualSha);
             meta.put("apkUrl", apkUrl);
             meta.put("verifiedAt", System.currentTimeMillis());
             meta.put("ready", true);
-            writeUtf8(getMetaFile(context), meta.toString());
+
+            synchronized (META_LOCK) {
+                File dest = getApkFile(context);
+                deleteQuietly(dest);
+                if (!tmp.renameTo(dest)) {
+                    deleteQuietly(tmp);
+                    throw new Exception("Falha ao mover APK verificado para o cache.");
+                }
+                writeUtf8(getMetaFile(context), meta.toString());
+            }
 
             if (listener != null) listener.onProgress(100);
             return meta;

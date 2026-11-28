@@ -32,13 +32,18 @@ public class ApkPreloadJobService extends JobService {
     private static final String GITHUB_RELEASES_DOWNLOAD_BASE =
             "https://github.com/criperrr/n2sac/releases/download";
 
+    private volatile Thread activeThread = null;
+
     public static void schedule(Context context) {
         try {
             JobScheduler scheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
             if (scheduler == null) return;
+            // Do NOT reschedule if already pending — otherwise opening the app resets the 6h timer!
+            if (scheduler.getPendingJob(JOB_ID) != null) return;
             ComponentName component = new ComponentName(context, ApkPreloadJobService.class);
             JobInfo info = new JobInfo.Builder(JOB_ID, component)
-                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_UNMETERED)
+                    .setRequiresBatteryNotLow(true)
                     .setPeriodic(PERIOD_MS)
                     .setPersisted(true)
                     .build();
@@ -50,20 +55,27 @@ public class ApkPreloadJobService extends JobService {
 
     @Override
     public boolean onStartJob(final JobParameters params) {
-        new Thread(() -> {
+        Thread t = new Thread(() -> {
             try {
                 runSilentCheckAndPreload();
             } catch (Exception e) {
                 Log.w(TAG, "Silent APK preload failed: " + e.getMessage());
             } finally {
+                activeThread = null;
                 jobFinished(params, false);
             }
-        }).start();
+        }, "ApkPreloadWorker");
+        activeThread = t;
+        t.start();
         return true;
     }
 
     @Override
     public boolean onStopJob(JobParameters params) {
+        Thread t = activeThread;
+        if (t != null) {
+            t.interrupt();
+        }
         return true;
     }
 

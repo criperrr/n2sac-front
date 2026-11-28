@@ -10,6 +10,7 @@ export default defineConfig({
   plugins: [react()],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    __BUILD_ID__: JSON.stringify(process.env.VITE_BUILD_ID ?? 'dev'),
   },
   build: {
     rollupOptions: {

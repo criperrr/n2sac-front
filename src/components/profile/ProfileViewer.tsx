@@ -566,6 +566,23 @@ const ProfileSheet: React.FC<{
           )}
         </div>
 
+        {state === 'ready' && profile?.official_name && (
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              marginTop: 4,
+              fontSize: '0.82rem',
+              fontWeight: 600,
+              color: tokens.onSurfaceVariant,
+            }}
+          >
+            <UserRound size={13} style={{ flexShrink: 0, opacity: 0.85 }} />
+            <span>{profile.official_name}</span>
+          </div>
+        )}
+
         {state === 'ready' && profile && (
           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
             <span

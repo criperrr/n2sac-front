@@ -26,11 +26,13 @@ import { installMotionTokens } from './theme/motion';
 import { installContentSizeMorph } from './theme/contentSizeMorph';
 import { installDiagnostics } from './telemetry/diagnostics';
 import { finishBootSplash } from './updater/bootSplash';
+import { registerOfflineServiceWorker } from './offline/offlineStore';
 
 installDiagnostics();
 installMotionTokens();
 installKeyboardInsets();
 installContentSizeMorph();
+registerOfflineServiceWorker();
 
 // Tag low-end Android devices (<= 4 CPU cores or <= 3GB RAM) so expensive full-screen
 // backdrop-filter blur passes are skipped automatically for smooth 60fps scrolling.

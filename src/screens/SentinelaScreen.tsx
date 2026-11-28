@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Bell } from 'lucide-react';
 import type { AccountProfileResponse } from '../api/types';
 import { NotificationQuickToggle } from '../components/settings/NotificationSettings';
@@ -6,6 +6,10 @@ import { M3_SPRINGS, useSpringValue } from '../theme/springPhysics';
 import { useM3Theme } from '../theme/ThemeContext';
 import { AnimatedNumber, IconShapeContainer } from '../components/expressive/ExpressivePrimitives';
 import { PollCountdownLabel } from '../components/PollCountdown';
+import {
+  SentinelaTransparencyModal,
+  TransparencyTriggerButton,
+} from '../components/TransparencyModal';
 
 export const SentinelaScreen: React.FC<{
   token: string;
@@ -33,6 +37,7 @@ export const SentinelaScreen: React.FC<{
   onOpenSettings,
 }) => {
   const { tokens, isMaterialYou } = useM3Theme();
+  const [showTransparency, setShowTransparency] = useState(false);
   const activityState =
     nextPollHintSecs <= 60
       ? {
@@ -98,18 +103,24 @@ export const SentinelaScreen: React.FC<{
             </div>
           </div>
 
-          <span
-            style={{
-              padding: isMaterialYou ? '6px 14px' : '4px 10px',
-              borderRadius: isMaterialYou ? 999 : 6,
-              fontSize: '0.74rem',
-              fontWeight: 700,
-              backgroundColor: activityState.bg,
-              color: activityState.fg,
-            }}
-          >
-            {activityState.mode}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <TransparencyTriggerButton
+              label="Como funciona?"
+              onClick={() => setShowTransparency(true)}
+            />
+            <span
+              style={{
+                padding: isMaterialYou ? '6px 14px' : '4px 10px',
+                borderRadius: isMaterialYou ? 999 : 6,
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                backgroundColor: activityState.bg,
+                color: activityState.fg,
+              }}
+            >
+              {activityState.mode}
+            </span>
+          </div>
         </div>
 
         <p style={{ margin: '0 0 18px', fontSize: '0.88rem', color: tokens.onSurfaceVariant, lineHeight: 1.5 }}>
@@ -197,6 +208,10 @@ export const SentinelaScreen: React.FC<{
         onProfileUpdated={onProfileUpdated}
         onOpenSettings={onOpenSettings}
       />
+
+      {showTransparency && (
+        <SentinelaTransparencyModal onClose={() => setShowTransparency(false)} />
+      )}
     </div>
   );
 };

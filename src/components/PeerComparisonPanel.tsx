@@ -121,7 +121,13 @@ const SideHeader: React.FC<{ side: ComparisonSide; align: 'left' | 'right'; wins
  * One subject, side by side: my grade on the left, theirs on the right, a bar growing out of the
  * center towards each side. Numbers count up (and bars grow) when the row scrolls into view.
  */
-const DuelRow: React.FC<{ row: SubjectComparisonRow; index: number }> = ({ row, index }) => {
+const DuelRow: React.FC<{
+  row: SubjectComparisonRow;
+  index: number;
+  isCrossClass: boolean;
+  myClassCode: string | null;
+  peerClassCode: string | null;
+}> = ({ row, index, isCrossClass, myClassCode, peerClassCode }) => {
   const { tokens, isMaterialYou } = useM3Theme();
   const [revealed, setRevealed] = useState(false);
   const mine = row.my_average ?? 0;
@@ -136,6 +142,10 @@ const DuelRow: React.FC<{ row: SubjectComparisonRow; index: number }> = ({ row, 
   const winColor = tokens.gradeSuccess;
   const sideColor = (wins: boolean) => (tie ? tokens.onSurface : wins ? winColor : tokens.onSurfaceVariant);
   const delay = Math.min(index, 4) * 60;
+  const hasSeparateClassAverages =
+    row.my_class_average != null &&
+    row.peer_class_average != null &&
+    (isCrossClass || Math.abs(row.my_class_average - row.peer_class_average) >= 0.05);
 
   return (
     <ExpressiveSegmentedCard
@@ -149,7 +159,7 @@ const DuelRow: React.FC<{ row: SubjectComparisonRow; index: number }> = ({ row, 
           : undefined),
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
         <IconShapeContainer size={28}>{renderSubjectIcon(row.subject_name, 14)}</IconShapeContainer>
         <span
           style={{
@@ -158,10 +168,26 @@ const DuelRow: React.FC<{ row: SubjectComparisonRow; index: number }> = ({ row, 
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
+            maxWidth: '100%',
           }}
         >
           {row.subject_name}
         </span>
+        {isCrossClass && row.is_common && (
+          <span
+            style={{
+              padding: '2px 7px',
+              borderRadius: isMaterialYou ? 999 : 6,
+              fontSize: '0.66rem',
+              fontWeight: 700,
+              backgroundColor: tokens.primaryContainer,
+              color: tokens.onPrimaryContainer,
+              flexShrink: 0,
+            }}
+          >
+            Em comum
+          </span>
+        )}
       </div>
 
       <div
@@ -246,10 +272,25 @@ const DuelRow: React.FC<{ row: SubjectComparisonRow; index: number }> = ({ row, 
         <DeltaChip delta={delta} />
         <span>{absences(row.peer_absences)}</span>
       </div>
-      {row.class_average !== null && (
-        <div style={{ textAlign: 'center', fontSize: '0.7rem', color: tokens.onSurfaceVariant, marginTop: 4 }}>
-          Média da sala {row.class_average.toFixed(1)}
+      {hasSeparateClassAverages ? (
+        <div
+          style={{
+            textAlign: 'center',
+            fontSize: '0.7rem',
+            color: tokens.onSurfaceVariant,
+            marginTop: 4,
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          M.T. {myClassCode ?? 'sua sala'} {row.my_class_average!.toFixed(1)} · M.T.{' '}
+          {peerClassCode ?? 'colega'} {row.peer_class_average!.toFixed(1)}
         </div>
+      ) : (
+        row.class_average !== null && (
+          <div style={{ textAlign: 'center', fontSize: '0.7rem', color: tokens.onSurfaceVariant, marginTop: 4 }}>
+            Média da sala {row.class_average.toFixed(1)}
+          </div>
+        )
       )}
     </ExpressiveSegmentedCard>
   );
@@ -269,7 +310,13 @@ export const PeerComparisonContent: React.FC<{
   wide?: boolean;
 }> = ({ comparison, me, peer, wide = false }) => {
   const { tokens, isMaterialYou } = useM3Theme();
-  const comparable = comparison.subjects.filter((r) => r.my_average !== null && r.peer_average !== null);
+  const isCrossClass = Boolean(
+    me.classCode &&
+      peer.classCode &&
+      me.classCode.trim().toUpperCase() !== peer.classCode.trim().toUpperCase()
+  );
+  const comparableRaw = comparison.subjects.filter((r) => r.my_average !== null && r.peer_average !== null);
+  const comparable = [...comparableRaw].sort((a, b) => Number(Boolean(b.is_common)) - Number(Boolean(a.is_common)));
   const unmatched = comparison.subjects.filter((r) => r.my_average === null || r.peer_average === null);
   const [renderedDuels, setRenderedDuels] = useState(INITIAL_DUELS);
 
@@ -365,7 +412,11 @@ export const PeerComparisonContent: React.FC<{
 
       {comparable.length > 0 && (
         <>
-          <div style={sectionLabelStyle(tokens.primary)}>Matéria por matéria</div>
+          <div style={sectionLabelStyle(tokens.primary)}>
+            {isCrossClass
+              ? `Matérias em comum (${comparable.length}) • valem no placar`
+              : 'Matéria por matéria'}
+          </div>
           <div
             style={{
               display: 'grid',
@@ -374,7 +425,14 @@ export const PeerComparisonContent: React.FC<{
             }}
           >
             {comparable.slice(0, renderedDuels).map((row, idx) => (
-              <DuelRow key={row.subject_name} row={row} index={idx} />
+              <DuelRow
+                key={row.subject_name}
+                row={row}
+                index={idx}
+                isCrossClass={isCrossClass}
+                myClassCode={me.classCode}
+                peerClassCode={peer.classCode}
+              />
             ))}
           </div>
         </>
@@ -382,7 +440,11 @@ export const PeerComparisonContent: React.FC<{
 
       {unmatched.length > 0 && (
         <>
-          <div style={sectionLabelStyle(tokens.onSurfaceVariant)}>Sem comparação ({unmatched.length})</div>
+          <div style={sectionLabelStyle(tokens.onSurfaceVariant)}>
+            {isCrossClass
+              ? `Fora do duelo — exclusivas ou sem nota (${unmatched.length})`
+              : `Sem comparação (${unmatched.length})`}
+          </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {unmatched.map((row) => (
               <span

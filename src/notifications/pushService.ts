@@ -25,6 +25,8 @@ export interface GradePushHighlight {
   class_average: number | null;
   previous_grade: number | null;
   recovery: boolean;
+  event_kind?: 'grade' | 'recovery_status';
+  recovery_code?: string;
 }
 
 export interface SocialPushEventDetail {

@@ -77,7 +77,7 @@ fs.writeFileSync(p, JSON.stringify(next, null, 2) + "\n", "utf8");
 
 echo "[deploy-web] Cleaning dist and running full local build (tsc -b && vite build)..."
 rm -rf "${ROOT_DIR}/dist"
-(cd "${ROOT_DIR}" && npm run build)
+(cd "${ROOT_DIR}" && VITE_BUILD_ID="${BUILD_ID}" npm run build)
 
 if [ ! -f "${ROOT_DIR}/dist/index.html" ]; then
   echo "[deploy-web] ERROR: dist/index.html missing after build." >&2

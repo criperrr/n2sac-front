@@ -5,6 +5,7 @@ import {
   Trophy,
   Bell,
   Megaphone,
+  MessageSquareHeart,
   User,
   RefreshCw,
   LogOut,
@@ -43,8 +44,8 @@ export const NAV_TABS: NavTabItem[] = [
   },
   {
     id: 'turma',
-    label: 'Canais da Turma',
-    shortLabel: 'Turma',
+    label: 'Anúncios',
+    shortLabel: 'Anúncios',
     icon: <Megaphone size={20} />,
     inBottomBar: true,
   },
@@ -209,6 +210,7 @@ export const ExpressiveNavigationShell: React.FC<{
   isRefreshing: boolean;
   lastHttpStatus?: 200 | 304 | null;
   onManualRefresh: () => void;
+  onOpenFeedback?: () => void;
   onLogout: () => void;
   children: React.ReactNode;
 }> = ({
@@ -219,6 +221,7 @@ export const ExpressiveNavigationShell: React.FC<{
   refreshCooldownUntil,
   isRefreshing,
   onManualRefresh,
+  onOpenFeedback,
   onLogout,
   children,
 }) => {
@@ -339,7 +342,7 @@ export const ExpressiveNavigationShell: React.FC<{
               className="nsac-rail-fade"
               style={{ fontSize: '0.72rem', fontWeight: 700, color: tokens.primary, textTransform: 'uppercase' }}
             >
-              Sua Turma
+              Anúncios
             </span>
             <span
               style={{
@@ -370,6 +373,46 @@ export const ExpressiveNavigationShell: React.FC<{
               vertical={false}
             />
           ))}
+          {onOpenFeedback && (
+            <button
+              type="button"
+              onClick={onOpenFeedback}
+              title="Reportar bug, enviar sugestão ou feedback"
+              aria-label="Ajuda e Feedback"
+              style={{
+                minWidth: 0,
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                textAlign: 'left',
+                padding: '2px 0',
+                marginTop: 6,
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: tokens.primary,
+                fontFamily: 'Outfit, sans-serif',
+                userSelect: 'none',
+              }}
+            >
+              <div
+                className="nsac-rail-item"
+                style={{
+                  borderRadius: 16,
+                  backgroundColor: `${tokens.primaryContainer}55`,
+                  border: `1px solid ${tokens.primary}33`,
+                }}
+              >
+                <span style={{ display: 'flex', flexShrink: 0 }}>
+                  <MessageSquareHeart size={19} />
+                </span>
+                <span className="nsac-rail-fade" style={{ fontSize: '0.88rem', fontWeight: 700 }}>
+                  Bug / Sugestão
+                </span>
+              </div>
+            </button>
+          )}
         </nav>
 
         {/* Actions in Rail Footer */}
@@ -481,6 +524,29 @@ export const ExpressiveNavigationShell: React.FC<{
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {onOpenFeedback && (
+              <button
+                type="button"
+                onClick={onOpenFeedback}
+                title="Reportar bug, sugestão ou feedback"
+                aria-label="Reportar bug, sugestão ou feedback"
+                className="mobile-only-btn"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 999,
+                  border: `1px solid ${tokens.primary}44`,
+                  backgroundColor: `${tokens.primaryContainer}88`,
+                  color: tokens.onPrimaryContainer,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <MessageSquareHeart size={16} />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onSelectTab('sentinela')}

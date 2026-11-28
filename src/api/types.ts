@@ -189,6 +189,89 @@ export interface AccountTagBadge {
   priority: number;
 }
 
+export type RankingScope = 'class' | 'grade_level' | 'course' | 'school' | 'friends';
+export type RankingSortBy = 'personal_average' | 'raw_average' | 'delta_vs_class' | 'momentum' | 'consistency';
+
+export interface CohortHighlightItem {
+  kind: 'leader' | 'top_delta' | 'top_riser' | 'most_consistent' | 'hardest_subject';
+  title: string;
+  subject_or_label: string;
+  value_text: string;
+  subtext: string;
+  account_id?: number | null;
+}
+
+export interface SubjectBenchmarkItem {
+  name: string;
+  grade: number;
+  class_average: number;
+  delta: number;
+}
+
+export interface CustomSliceBimesterPoint {
+  bimester: number;
+  my_avg: number | null;
+  class_avg: number | null;
+  subjects_count: number;
+}
+
+export interface CrossYearSliceStat {
+  school_year: number;
+  students_count: number;
+  school_avg: number;
+  my_percentile_in_year: number | null;
+}
+
+export interface CustomSliceAnalyticsResponse {
+  school_year: number;
+  selected_subjects_count: number;
+  selected_bimesters: number[];
+  my_avg: number | null;
+  my_class_avg: number | null;
+  my_delta_vs_class: number | null;
+  evolution_delta: number | null;
+  same_class_top_pct: number | null;
+  same_class_total: number;
+  same_year_school_top_pct: number | null;
+  same_year_school_avg: number | null;
+  same_year_school_total: number;
+  bimester_series: CustomSliceBimesterPoint[];
+  cross_year_stats: CrossYearSliceStat[];
+}
+
+export interface RankingNerdStats {
+  school_mu_0: number;
+  school_sigma: number;
+  class_theta: number;
+  class_sigma: number;
+  class_mean_mt: number;
+  z_score: number;
+  coverage_2d_pct: number;
+  active_bimesters: number;
+  ridge_active: boolean;
+  consistency_cara_beta: number;
+  multi_class_calibrated: boolean;
+}
+
+export interface PersonalBenchmark {
+  personal_average: number;
+  class_average: number;
+  delta_vs_class: number;
+  subjects_count: number;
+  subjects_above_class: number;
+  subjects_below_class: number;
+  momentum_delta: number | null;
+  consistency_stddev: number | null;
+  hypothetical_rank: number | null;
+  hypothetical_total: number;
+  standout_subject: SubjectBenchmarkItem | null;
+  focus_subject: SubjectBenchmarkItem | null;
+  calibrated_score?: number | null;
+  leader_target_average?: number | null;
+  headroom_pct?: number | null;
+  nerd_stats?: RankingNerdStats | null;
+}
+
 export interface LeaderboardEntry {
   rank: number;
   account_id: number;
@@ -207,6 +290,14 @@ export interface LeaderboardEntry {
   subjects_count: number;
   total_absences: number;
   tags?: AccountTagBadge[];
+  is_tied?: boolean;
+  momentum_delta?: number | null;
+  consistency_stddev?: number | null;
+  coverage_ratio?: number;
+  is_provisional?: boolean;
+  is_friend?: boolean;
+  calibrated_score?: number | null;
+  consistency_score?: number | null;
 }
 
 export interface SubjectComparisonRow {
@@ -217,6 +308,9 @@ export interface SubjectComparisonRow {
   delta_me_vs_peer: number | null;
   my_absences: number;
   peer_absences: number;
+  is_common?: boolean;
+  my_class_average?: number | null;
+  peer_class_average?: number | null;
 }
 
 export interface PeerComparisonDetail {
@@ -228,7 +322,19 @@ export interface PeerComparisonDetail {
 }
 
 export interface ComparisonSummaryResponse {
-  scope: 'class' | 'course' | 'school';
+  scope: RankingScope;
+  sort_by?: RankingSortBy;
+  scope_label?: string;
+  common_only?: boolean;
+  common_subjects?: string[];
+  common_subjects_note?: string | null;
+  expected_subjects_count?: number;
+  qualified_participants?: number;
+  highlights?: CohortHighlightItem[];
+  my_benchmark?: PersonalBenchmark | null;
+  available_subjects?: string[];
+  available_years?: number[];
+  my_class_code?: string | null;
   school_year: number;
   bimester: number | null;
   subject_filter: string | null;
@@ -239,6 +345,79 @@ export interface ComparisonSummaryResponse {
   my_entry: LeaderboardEntry | null;
   leaderboard: LeaderboardEntry[];
   peer_comparison: PeerComparisonDetail | null;
+}
+
+export type ClassroomRankingScope = 'all' | 'grade_level' | 'course' | 'integrado' | 'noturno';
+export type ClassroomRankingSortBy = 'official_average' | 'raw_average' | 'momentum' | 'consistency';
+export type ClassroomCourseFamily = 'informatica' | 'eletronica' | 'mecanica' | 'other';
+export type ClassroomModality = 'integrado' | 'noturno' | 'other';
+
+export interface ClassroomSubjectHighlight {
+  name: string;
+  average: number;
+}
+
+export interface ClassroomLeaderboardEntry {
+  rank: number;
+  class_code: string;
+  is_my_class: boolean;
+  course_family: ClassroomCourseFamily;
+  modality: ClassroomModality;
+  grade_level?: number | null;
+  official_average: number;
+  subjects_count: number;
+  posted_bimesters_count: number;
+  active_students_count: number;
+  is_provisional?: boolean;
+  coverage_ratio?: number;
+  momentum_delta?: number | null;
+  consistency_stddev?: number | null;
+  is_tied?: boolean;
+  best_subject?: ClassroomSubjectHighlight | null;
+  hardest_subject?: ClassroomSubjectHighlight | null;
+  calibrated_score?: number | null;
+  consistency_score?: number | null;
+}
+
+export interface ClassroomSubjectComparisonRow {
+  subject_name: string;
+  my_class_average: number | null;
+  peer_class_average: number | null;
+  delta: number | null;
+  is_common?: boolean;
+}
+
+export interface ClassroomComparisonDetail {
+  my_class_entry: ClassroomLeaderboardEntry;
+  peer_class_entry: ClassroomLeaderboardEntry;
+  my_wins: number;
+  peer_wins: number;
+  ties: number;
+  subjects: ClassroomSubjectComparisonRow[];
+}
+
+export interface ClassroomRankingResponse {
+  scope: ClassroomRankingScope;
+  sort_by: ClassroomRankingSortBy;
+  scope_label: string;
+  school_year: number;
+  bimester: number | null;
+  subject_filter: string | null;
+  common_only: boolean;
+  common_subjects?: string[];
+  common_subjects_note?: string | null;
+  total_classes: number;
+  qualified_classes: number;
+  expected_subjects_count: number;
+  my_class_code: string | null;
+  my_class_rank: number | null;
+  my_class_percentile: number | null;
+  my_class_entry: ClassroomLeaderboardEntry | null;
+  leaderboard: ClassroomLeaderboardEntry[];
+  highlights?: CohortHighlightItem[];
+  available_subjects?: string[];
+  available_years?: number[];
+  class_comparison?: ClassroomComparisonDetail | null;
 }
 
 export type FollowEdgeStatus = 'none' | 'pending' | 'accepted';
@@ -302,6 +481,7 @@ export interface PublicProfile {
   account_id: number;
   is_me: boolean;
   display_label: string;
+  official_name?: string | null;
   class_code: string;
   bio: string | null;
   avatar_url: string | null;
@@ -561,6 +741,52 @@ export interface AnnouncementItem {
   edited_at: string | null;
   deleted: boolean;
   rev: number;
+}
+
+export interface DevAnnouncementReaction {
+  emoji: string;
+  count: number;
+  reacted_by_me: boolean;
+}
+
+export interface DevAnnouncementPollOption {
+  id: number;
+  label: string;
+  votes: number;
+  voted_by_me: boolean;
+}
+
+export interface DevAnnouncementComment {
+  id: number;
+  announcement_id: number;
+  account_id: number;
+  author_name: string;
+  body: string;
+  is_mine: boolean;
+  created_at: string;
+}
+
+export interface DevAnnouncementItem {
+  id: number;
+  author_account_id: number;
+  author_name: string;
+  title: string;
+  body: string;
+  tag: string;
+  pinned: boolean;
+  image_data_url: string | null;
+  read_by_me: boolean;
+  comment_count: number;
+  reactions: DevAnnouncementReaction[];
+  poll_options: DevAnnouncementPollOption[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DevAnnouncementsResponse {
+  items: DevAnnouncementItem[];
+  unread_count: number;
+  can_publish: boolean;
 }
 
 export interface ClassroomOverviewPayload {

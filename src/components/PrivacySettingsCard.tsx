@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { EyeOff, ShieldCheck, UserSearch } from 'lucide-react';
-import { fetchRankingPreferences, updatePrivacy } from '../api/nsacClient';
+import { fetchRankingPreferences, getCachedRankingPreferences, updatePrivacy } from '../api/nsacClient';
 import type { RankingPreferences } from '../api/types';
 import { useM3Theme } from '../theme/ThemeContext';
 import { ExpressiveSegmentedCard } from './expressive/ExpressivePrimitives';
@@ -11,30 +11,60 @@ import { PrivacyToggle } from './PrivacyToggle';
  * - "Ser encontrado na busca": findable by name/e-mail even without showing the name in the ranking.
  * - "Modo invisível": never exposed anywhere — leaves the ranking, search, photo and public profile.
  */
-export const PrivacySettingsCard: React.FC<{ token: string; refreshSignal?: number }> = ({
+export const PrivacySettingsCard: React.FC<{
+  token: string;
+  refreshSignal?: number;
+  initialPreferences?: RankingPreferences | null;
+  onPreferencesUpdated?: (prefs: RankingPreferences) => void;
+}> = ({
   token,
   refreshSignal = 0,
+  initialPreferences,
+  onPreferencesUpdated,
 }) => {
   const { tokens } = useM3Theme();
-  const [prefs, setPrefs] = useState<RankingPreferences | null>(null);
+  const [prefs, setPrefs] = useState<RankingPreferences | null>(
+    () => initialPreferences ?? getCachedRankingPreferences(token)
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (initialPreferences) {
+      setPrefs(initialPreferences);
+    }
+  }, [initialPreferences]);
+
+  useEffect(() => {
+    // Avoid duplicate mount fetches when App already hydrated preferences; still refresh on explicit pull-to-refresh
+    // when rendered standalone (without parent-driven `initialPreferences`).
+    if (refreshSignal === 0 && (initialPreferences || getCachedRankingPreferences(token))) {
+      return;
+    }
+    if (refreshSignal > 0 && initialPreferences !== undefined) {
+      return;
+    }
     let cancelled = false;
     fetchRankingPreferences(token)
-      .then((p) => !cancelled && setPrefs(p))
+      .then((p) => {
+        if (!cancelled) {
+          setPrefs(p);
+          onPreferencesUpdated?.(p);
+        }
+      })
       .catch(() => !cancelled && setError('Não foi possível carregar suas configurações de privacidade.'));
     return () => {
       cancelled = true;
     };
-  }, [token, refreshSignal]);
+  }, [token, refreshSignal, initialPreferences, onPreferencesUpdated]);
 
   const save = async (patch: { discoverable?: boolean; invisible?: boolean }) => {
     setSaving(true);
     setError(null);
     try {
-      setPrefs(await updatePrivacy(token, patch));
+      const updated = await updatePrivacy(token, patch);
+      setPrefs(updated);
+      onPreferencesUpdated?.(updated);
     } catch {
       setError('Não foi possível salvar agora. Tente novamente.');
     } finally {

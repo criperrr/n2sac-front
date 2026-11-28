@@ -2,10 +2,11 @@ import { Capacitor } from '@capacitor/core';
 import { BackgroundRunner } from '@capacitor/background-runner';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { getApiBaseUrl } from '../api/nsacClient';
-import { APP_VERSION, formatVersionLabel } from '../appVersion';
+import { APP_BUILD_ID, APP_VERSION, formatVersionLabel } from '../appVersion';
 import { showBootSplashForReload } from './bootSplash';
 
 export const CURRENT_APP_VERSION = APP_VERSION;
+export const CURRENT_BUILD_ID = APP_BUILD_ID;
 const GITHUB_REPO = 'criperrr/n2sac';
 const GITHUB_RELEASES_API = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 const GITHUB_RELEASES_BASE = `https://github.com/${GITHUB_REPO}/releases`;
@@ -22,10 +23,6 @@ function resolveApkUrlToGitHub(rawUrl: string | undefined, version: string): str
   }
   return githubApkDownloadUrl(version);
 }
-const LAST_BUILD_ID_KEY = 'n2sac_ota_build_id_v1';
-// v2 key: versions stored under v1 belong to the pre-release 2.0.x numbering and must not
-// outrank the restarted 1.x line.
-const INSTALLED_OTA_VERSION_KEY = 'n2sac_ota_version_v2';
 const BACKGROUND_RUNNER_LABEL = 'com.cti.n2sac.update-check';
 
 export async function syncBackgroundUpdateState(): Promise<void> {
@@ -35,8 +32,8 @@ export async function syncBackgroundUpdateState(): Promise<void> {
       label: BACKGROUND_RUNNER_LABEL,
       event: 'syncUpdateState',
       details: {
-        buildId: localStorage.getItem(LAST_BUILD_ID_KEY) ?? '',
-        otaVersion: localStorage.getItem(INSTALLED_OTA_VERSION_KEY) ?? '',
+        buildId: CURRENT_BUILD_ID,
+        otaVersion: CURRENT_APP_VERSION,
         nativeVersion: getInstalledNativeVersion(),
       },
     });
@@ -46,14 +43,6 @@ export async function syncBackgroundUpdateState(): Promise<void> {
 }
 
 export function getEffectiveAppVersion(): string {
-  try {
-    const otaVer = localStorage.getItem(INSTALLED_OTA_VERSION_KEY);
-    if (otaVer && compareSemver(otaVer, CURRENT_APP_VERSION) > 0) {
-      return otaVer;
-    }
-  } catch {
-    // ignore
-  }
   return CURRENT_APP_VERSION;
 }
 
@@ -218,21 +207,64 @@ export function compareSemver(a: string, b: string): number {
   return 0;
 }
 
-export async function applyOtaUpdate(buildId?: string, version?: string): Promise<void> {
+async function waitForSwActivationIfWaiting(): Promise<void> {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
   try {
-    if (buildId) localStorage.setItem(LAST_BUILD_ID_KEY, buildId);
-    if (version) localStorage.setItem(INSTALLED_OTA_VERSION_KEY, version);
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) return;
+
+    await Promise.race([
+      reg.update().catch(() => {}),
+      new Promise<void>((resolve) => window.setTimeout(resolve, 1500)),
+    ]);
+
+    if (reg.installing) {
+      const installing = reg.installing;
+      await Promise.race([
+        new Promise<void>((resolve) => {
+          installing.addEventListener('statechange', () => {
+            if (installing.state === 'installed' || installing.state === 'redundant') {
+              resolve();
+            }
+          });
+        }),
+        new Promise<void>((resolve) => window.setTimeout(resolve, 1500)),
+      ]);
+    }
+
+    if (reg.waiting) {
+      const waiting = reg.waiting;
+      await Promise.race([
+        new Promise<void>((resolve) => {
+          navigator.serviceWorker.addEventListener('controllerchange', () => resolve(), { once: true });
+          waiting.postMessage({ type: 'SKIP_WAITING' });
+        }),
+        new Promise<void>((resolve) => window.setTimeout(resolve, 1500)),
+      ]);
+    }
   } catch {
-    // ignore
+    // Non-fatal: proceed to reload.
   }
-  await syncBackgroundUpdateState();
+}
+
+export async function applyOtaUpdate(_buildId?: string, version?: string): Promise<void> {
+  // Invariant W3: verify network reachability BEFORE evicting CacheStorage!
+  const htmlOk = await prefetchNewBuild();
+  if (!htmlOk) {
+    throw new Error('Sem conexão para baixar a atualização.');
+  }
+
   if ('caches' in window) {
     const keys = await caches.keys();
-    await Promise.all(keys.map((k) => caches.delete(k)));
+    // Only invalidate old App Shell caches; preserve offline media/avatar caches (`n2sac-media-*`).
+    await Promise.all(
+      keys
+        .filter((k) => !k.startsWith('n2sac-media-'))
+        .map((k) => caches.delete(k))
+    );
   }
-  // Download the new build while the indicator keeps running, so the reload itself is instant
-  // (served from the HTTP cache) instead of a frozen screen while ~600KB of JS arrive.
-  await Promise.all([prefetchNewBuild(), new Promise((resolve) => window.setTimeout(resolve, 900))]);
+
+  await waitForSwActivationIfWaiting();
   // Same splash on both sides of the reload: the old page shows it now, the new one boots into it
   // (inline in index.html) and fades it out once React has rendered.
   showBootSplashForReload(version ? `Atualizando para ${formatVersionLabel(version)}` : 'Atualizando');
@@ -240,19 +272,20 @@ export async function applyOtaUpdate(buildId?: string, version?: string): Promis
   window.location.reload();
 }
 
-/** Fetches the new index.html and every asset it references into the HTTP cache (best effort). */
-async function prefetchNewBuild(timeoutMs = 10000): Promise<void> {
+/** Fetches the new index.html and every asset it references into the HTTP cache. Returns true iff index.html succeeded. */
+async function prefetchNewBuild(timeoutMs = 10000): Promise<boolean> {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(`/index.html?ota=${Date.now()}`, { cache: 'no-store', signal: controller.signal });
-    if (!res.ok) return;
+    if (!res.ok) return false;
     const html = await res.text();
     const assets = new Set<string>();
     for (const m of html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)) assets.add(m[1]!);
     await Promise.all([...assets].map((url) => fetch(url, { signal: controller.signal }).then((r) => r.blob()).catch(() => null)));
+    return true;
   } catch {
-    // Offline or slow: the reload just downloads the build itself.
+    return false;
   } finally {
     window.clearTimeout(timer);
   }
@@ -280,7 +313,6 @@ export async function checkServerOtaUpdate(): Promise<NativeUpdateInfo | null> {
     };
     const remoteVersion = (data.version ?? '').trim();
     const remoteBuildId = (data.buildId ?? '').trim();
-    const prevBuildId = localStorage.getItem(LAST_BUILD_ID_KEY);
 
     // 1) Published native APK update distributed via GitHub Releases (Android only).
     //    Strictly requires a real 64-hex SHA-256 checksum so OTA-only deploys can never
@@ -318,47 +350,27 @@ export async function checkServerOtaUpdate(): Promise<NativeUpdateInfo | null> {
       }
     }
 
-    // If the currently executing JS bundle is already at (or ahead of) remoteVersion,
-    // silently sync LAST_BUILD_ID_KEY / INSTALLED_OTA_VERSION_KEY and never prompt again
-    // for the same version (prevents infinite OTA prompts after installing a new native APK).
-    if (remoteVersion.length > 0 && compareSemver(remoteVersion, CURRENT_APP_VERSION) <= 0) {
-      try {
-        if (remoteBuildId.length > 0) localStorage.setItem(LAST_BUILD_ID_KEY, remoteBuildId);
-        localStorage.setItem(INSTALLED_OTA_VERSION_KEY, CURRENT_APP_VERSION);
-      } catch {
-        // ignore
-      }
-      return null;
-    }
+    // Invariant W2: Unified Web OTA comparison with dev-build guard.
+    if (!remoteVersion) return null;
+    const semverCmp = compareSemver(remoteVersion, CURRENT_APP_VERSION);
+    if (semverCmp < 0) return null;
 
-    // If this exact buildId was already applied/seen, sync its version and do not prompt again!
-    if (remoteBuildId.length > 0 && prevBuildId === remoteBuildId) {
-      if (remoteVersion.length > 0) {
-        try {
-          localStorage.setItem(INSTALLED_OTA_VERSION_KEY, remoteVersion);
-        } catch {
-          // ignore
-        }
-      }
-      return null;
-    }
+    const sameVersionNewBuild =
+      semverCmp === 0 &&
+      Boolean(CURRENT_BUILD_ID) &&
+      CURRENT_BUILD_ID !== 'dev' &&
+      Boolean(remoteBuildId) &&
+      remoteBuildId !== CURRENT_BUILD_ID;
 
-    const hasNewerVersion =
-      remoteVersion.length > 0 && compareSemver(remoteVersion, getEffectiveAppVersion()) > 0;
-
-    if (hasNewerVersion) {
+    if (semverCmp > 0 || sameVersionNewBuild) {
       return {
-        version: remoteVersion || 'OTA',
+        version: remoteVersion,
         source: 'server-ota',
         downloadUrl: `${base}/`,
         releaseUrl: `${base}/`,
         buildId: remoteBuildId || undefined,
         notes: (data.notes ?? '').trim() || 'Atualização rápida disponível no servidor n²sac.',
       };
-    }
-
-    if (remoteBuildId && !prevBuildId) {
-      localStorage.setItem(LAST_BUILD_ID_KEY, remoteBuildId);
     }
   } catch {
     // ignore offline / unreachable server
@@ -403,11 +415,11 @@ export async function checkGitHubNativeRelease(): Promise<NativeUpdateInfo | nul
 }
 
 /**
- * Checks both GitHub Releases (native APK) and Server OTA (`/version.json`).
+ * Checks Server OTA (`/version.json`) as single source of truth for both Web OTA and native APK
+ * (avoids unauthenticated `api.github.com` 60 req/h IP rate limits on shared school Wi-Fi).
  */
 export async function checkAllUpdates(): Promise<NativeUpdateInfo | null> {
-  const [ota, gh] = await Promise.all([checkServerOtaUpdate(), checkGitHubNativeRelease()]);
-  const chosen = ota?.source === 'github-release' ? ota : gh ?? ota;
+  const chosen = await checkServerOtaUpdate();
   const cached = getCachedNativeApkInfo();
   if (chosen) {
     if (

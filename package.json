@@ -9,7 +9,8 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
-    "cap:sync": "npx cap sync android"
+    "cap:sync": "npx cap sync android",
+    "test:ui:recovery": "node scripts/test-ui-recovery-modal.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.0.1",
@@ -28,6 +29,7 @@
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
+    "playwright": "^1.65.1",
     "typescript": "~5.7.3",
     "vite": "^6.2.0"
   }

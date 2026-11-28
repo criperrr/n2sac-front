@@ -58,9 +58,51 @@ public class MainActivity extends BridgeActivity {
     private volatile String pendingPushIntentJson = null;
 
     private volatile boolean webAppReady = false;
-    private static final long SPLASH_MAX_WAIT_MS = 4500L;
+    private boolean splashExitHandled = false;
+    private android.animation.AnimatorSet activeSplashExitAnimator = null;
+    private static final long SPLASH_MAX_WAIT_MS = 2000L;
     private static final long SPLASH_EXPLODE_MS = 200L;
     private static final long SPLASH_FADE_MS = 50L;
+
+    /**
+     * Safely resolves the splash icon view without triggering the AndroidX core-splashscreen 1.0.1
+     * Kotlin non-null assertion NPE (`platformSplashScreenView.iconView!!`) when Android 12+
+     * hands over an iconless solid-color starting/transition SplashScreenView (e.g. after screen
+     * off/on, lockscreen unlock, or uiMode/config change while locked).
+     */
+    static View resolveSplashIconViewSafely(
+        View splashView,
+        java.util.function.Supplier<View> compatIconSupplier
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+            && splashView instanceof android.window.SplashScreenView) {
+            return ((android.window.SplashScreenView) splashView).getIconView();
+        }
+        if (compatIconSupplier == null) return null;
+        try {
+            return compatIconSupplier.get();
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * Idempotently invokes a splash removal callback at most once, swallowing any framework
+     * IllegalStateException/NullPointerException if the window is already detached or destroyed.
+     */
+    static Runnable createIdempotentSplashRemover(Runnable removeAction) {
+        final java.util.concurrent.atomic.AtomicBoolean removed =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
+        return () -> {
+            if (!removed.compareAndSet(false, true)) return;
+            if (removeAction == null) return;
+            try {
+                removeAction.run();
+            } catch (Throwable ignored) {
+                // Window may already be detached or Activity destroyed.
+            }
+        };
+    }
 
     /**
      * Native shockwave + 24 radial sparks overlay matching the /inicio hero explosion,
@@ -144,75 +186,122 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         final long onCreateMs = android.os.SystemClock.uptimeMillis();
+        final boolean isRecreated = savedInstanceState != null;
         SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
         splashScreen.setKeepOnScreenCondition(() ->
-            !webAppReady && (android.os.SystemClock.uptimeMillis() - onCreateMs) < SPLASH_MAX_WAIT_MS
+            !isRecreated
+                && !webAppReady
+                && (android.os.SystemClock.uptimeMillis() - onCreateMs) < SPLASH_MAX_WAIT_MS
         );
         splashScreen.setOnExitAnimationListener(splashViewProvider -> {
-            View splashView = splashViewProvider.getView();
-            View iconView = splashViewProvider.getIconView();
-
-            android.animation.AnimatorSet exitSeq = new android.animation.AnimatorSet();
-            ObjectAnimator fadeOut = ObjectAnimator.ofFloat(splashView, View.ALPHA, 1f, 0f);
-            fadeOut.setDuration(SPLASH_FADE_MS);
-            fadeOut.setInterpolator(new AccelerateInterpolator());
-
-            if (iconView != null) {
-                android.animation.AnimatorSet explodeSet = new android.animation.AnimatorSet();
-                java.util.ArrayList<Animator> anims = new java.util.ArrayList<>();
-
-                // Shockwave + 24 radial sparks overlay on the splash container
-                if (splashView instanceof android.view.ViewGroup) {
-                    SplashExplosionView fx = new SplashExplosionView(this);
-                    ((android.view.ViewGroup) splashView).addView(
-                        fx,
-                        new android.view.ViewGroup.LayoutParams(
-                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                            android.view.ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                    );
-                    android.animation.ValueAnimator fxAnim = android.animation.ValueAnimator.ofFloat(0f, 1f);
-                    fxAnim.setDuration(SPLASH_EXPLODE_MS);
-                    fxAnim.addUpdateListener(a -> fx.setProgress((float) a.getAnimatedValue()));
-                    anims.add(fxAnim);
+            final Runnable removeOnce = createIdempotentSplashRemover(splashViewProvider::remove);
+            try {
+                // Clear the platform listener after first cold-start handover so subsequent
+                // screen-off/lock/unlock/uiMode solid-color starting windows never re-enter.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    try {
+                        getSplashScreen().clearOnExitAnimationListener();
+                    } catch (Throwable ignored) {
+                        // ignore
+                    }
                 }
 
-                // Recoil shake (like /inicio stageShake) + explosive pop + viscous spin brake
-                float dp = getResources().getDisplayMetrics().density;
-                ObjectAnimator shakeX = ObjectAnimator.ofFloat(iconView, View.TRANSLATION_X, 0f, -6f * dp, 7f * dp, -5f * dp, 4f * dp, 0f);
-                ObjectAnimator shakeY = ObjectAnimator.ofFloat(iconView, View.TRANSLATION_Y, 0f, 3f * dp, -3f * dp, 2f * dp, -2f * dp, 0f);
-                ObjectAnimator sx = ObjectAnimator.ofFloat(iconView, View.SCALE_X, 1f, 1.32f, 0.94f, 1f);
-                ObjectAnimator sy = ObjectAnimator.ofFloat(iconView, View.SCALE_Y, 1f, 1.32f, 0.94f, 1f);
-                ObjectAnimator rot = ObjectAnimator.ofFloat(iconView, View.ROTATION, iconView.getRotation(), iconView.getRotation() + 360f);
+                if (splashExitHandled || isFinishing() || isDestroyed()) {
+                    removeOnce.run();
+                    return;
+                }
+                splashExitHandled = true;
 
-                shakeX.setDuration(160L);
-                shakeY.setDuration(160L);
-                sx.setDuration(SPLASH_EXPLODE_MS);
-                sy.setDuration(SPLASH_EXPLODE_MS);
-                rot.setDuration(SPLASH_EXPLODE_MS);
-                sx.setInterpolator(new android.view.animation.DecelerateInterpolator(2.2f));
-                sy.setInterpolator(new android.view.animation.DecelerateInterpolator(2.2f));
-                rot.setInterpolator(new android.view.animation.DecelerateInterpolator(3.0f));
+                View splashView = splashViewProvider.getView();
+                if (splashView == null) {
+                    removeOnce.run();
+                    return;
+                }
 
-                anims.add(shakeX);
-                anims.add(shakeY);
-                anims.add(sx);
-                anims.add(sy);
-                anims.add(rot);
+                View iconView = resolveSplashIconViewSafely(
+                    splashView,
+                    splashViewProvider::getIconView
+                );
 
-                explodeSet.playTogether(anims);
-                exitSeq.playSequentially(explodeSet, fadeOut);
-            } else {
-                exitSeq.play(fadeOut);
+                // If Android handed over an iconless solid-color starting window (e.g. warm
+                // resume / lockscreen transition), fade it out cleanly without explosion FX.
+                android.animation.AnimatorSet exitSeq = new android.animation.AnimatorSet();
+                ObjectAnimator fadeOut = ObjectAnimator.ofFloat(splashView, View.ALPHA, 1f, 0f);
+                fadeOut.setDuration(SPLASH_FADE_MS);
+                fadeOut.setInterpolator(new AccelerateInterpolator());
+
+                if (iconView != null) {
+                    android.animation.AnimatorSet explodeSet = new android.animation.AnimatorSet();
+                    java.util.ArrayList<Animator> anims = new java.util.ArrayList<>();
+
+                    // Shockwave + 24 radial sparks overlay on the splash container
+                    if (splashView instanceof android.view.ViewGroup) {
+                        SplashExplosionView fx = new SplashExplosionView(this);
+                        ((android.view.ViewGroup) splashView).addView(
+                            fx,
+                            new android.view.ViewGroup.LayoutParams(
+                                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                                android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                            )
+                        );
+                        android.animation.ValueAnimator fxAnim = android.animation.ValueAnimator.ofFloat(0f, 1f);
+                        fxAnim.setDuration(SPLASH_EXPLODE_MS);
+                        fxAnim.addUpdateListener(a -> fx.setProgress((float) a.getAnimatedValue()));
+                        anims.add(fxAnim);
+                    }
+
+                    // Recoil shake (like /inicio stageShake) + explosive pop + viscous spin brake
+                    float dp = getResources().getDisplayMetrics().density;
+                    ObjectAnimator shakeX = ObjectAnimator.ofFloat(iconView, View.TRANSLATION_X, 0f, -6f * dp, 7f * dp, -5f * dp, 4f * dp, 0f);
+                    ObjectAnimator shakeY = ObjectAnimator.ofFloat(iconView, View.TRANSLATION_Y, 0f, 3f * dp, -3f * dp, 2f * dp, -2f * dp, 0f);
+                    ObjectAnimator sx = ObjectAnimator.ofFloat(iconView, View.SCALE_X, 1f, 1.32f, 0.94f, 1f);
+                    ObjectAnimator sy = ObjectAnimator.ofFloat(iconView, View.SCALE_Y, 1f, 1.32f, 0.94f, 1f);
+                    ObjectAnimator rot = ObjectAnimator.ofFloat(iconView, View.ROTATION, iconView.getRotation(), iconView.getRotation() + 360f);
+
+                    shakeX.setDuration(160L);
+                    shakeY.setDuration(160L);
+                    sx.setDuration(SPLASH_EXPLODE_MS);
+                    sy.setDuration(SPLASH_EXPLODE_MS);
+                    rot.setDuration(SPLASH_EXPLODE_MS);
+                    sx.setInterpolator(new android.view.animation.DecelerateInterpolator(2.2f));
+                    sy.setInterpolator(new android.view.animation.DecelerateInterpolator(2.2f));
+                    rot.setInterpolator(new android.view.animation.DecelerateInterpolator(3.0f));
+
+                    anims.add(shakeX);
+                    anims.add(shakeY);
+                    anims.add(sx);
+                    anims.add(sy);
+                    anims.add(rot);
+
+                    explodeSet.playTogether(anims);
+                    exitSeq.playSequentially(explodeSet, fadeOut);
+                } else {
+                    exitSeq.play(fadeOut);
+                }
+
+                activeSplashExitAnimator = exitSeq;
+                exitSeq.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        if (activeSplashExitAnimator == animation) {
+                            activeSplashExitAnimator = null;
+                        }
+                        removeOnce.run();
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Animator animation) {
+                        if (activeSplashExitAnimator == animation) {
+                            activeSplashExitAnimator = null;
+                        }
+                        removeOnce.run();
+                    }
+                });
+                exitSeq.start();
+            } catch (Throwable t) {
+                android.util.Log.w("N2SAC_SPLASH", "Fallback removing splash screen after error", t);
+                removeOnce.run();
             }
-
-            exitSeq.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    splashViewProvider.remove();
-                }
-            });
-            exitSeq.start();
         });
         super.onCreate(savedInstanceState);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_NOSENSOR);
@@ -343,6 +432,10 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onDestroy() {
+        if (activeSplashExitAnimator != null) {
+            activeSplashExitAnimator.cancel();
+            activeSplashExitAnimator = null;
+        }
         applyPendingLauncherAlias();
         super.onDestroy();
     }
@@ -636,6 +729,11 @@ public class MainActivity extends BridgeActivity {
             public void setAppThemeIcon(final String themeKey) {
                 runOnUiThread(() -> scheduleAppThemeIconAndSplash(themeKey));
             }
+
+            @JavascriptInterface
+            public String getSystemDynamicColorJson() {
+                return buildAospDynamicColorPayloadJson();
+            }
         }, "NsacAndroidTheme");
     }
 
@@ -853,11 +951,7 @@ public class MainActivity extends BridgeActivity {
         return String.format("#%06X", 0xFFFFFF & color);
     }
 
-    private void syncAospDynamicColorsToWebView() {
-        if (this.bridge == null) return;
-        WebView webView = this.bridge.getWebView();
-        if (webView == null) return;
-
+    private String buildAospDynamicColorPayloadJson() {
         int nightMask = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
         boolean isSystemDark = (nightMask == Configuration.UI_MODE_NIGHT_YES);
 
@@ -874,10 +968,19 @@ public class MainActivity extends BridgeActivity {
             tertiaryHex = colorIntToHex(accent3);
         }
 
-        final String payloadJson = String.format(
+        return String.format(
             "{\"seedHex\":\"%s\",\"secondaryHex\":\"%s\",\"tertiaryHex\":\"%s\",\"isSystemDark\":%b,\"source\":\"android-aosp\"}",
             seedHex, secondaryHex, tertiaryHex, isSystemDark
         );
+    }
+
+    private void syncAospDynamicColorsToWebView() {
+        if (this.bridge == null) return;
+        WebView webView = this.bridge.getWebView();
+        if (webView == null) return;
+
+        final String payloadJson = buildAospDynamicColorPayloadJson();
+        android.util.Log.i("N2SAC_MONET", "sync: " + payloadJson);
 
         final String js = "(function(){"
             + "window.__NSAC_ANDROID_DYNAMIC_COLOR__ = " + payloadJson + ";"

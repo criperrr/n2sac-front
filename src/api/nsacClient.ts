@@ -1,3 +1,10 @@
+import {
+  clearAccountOfflineStore,
+  getOfflineEntry,
+  OFFLINE_TTL_MS,
+  putOfflineEntry,
+  reportNetworkStatus,
+} from '../offline/offlineStore';
 import type {
   AccountProfileResponse,
   AllYearsResponse,
@@ -6,20 +13,28 @@ import type {
   AtrasoRecord,
   BoletimApiQueryParams,
   CachedResource,
+  ClassroomComparisonDetail,
+  ClassroomRankingResponse,
+  ClassroomRankingScope,
+  ClassroomRankingSortBy,
   ComparisonSummaryResponse,
+  CustomSliceAnalyticsResponse,
   ChatMessage,
   ConversationMessagesPayload,
   FichaAvaliacaoEntry,
   FollowMutationResult,
   HomeInfo,
   LoginResponse,
+  PeerComparisonDetail,
   PublicProfile,
+  RankingPreferences,
+  RankingScope,
+  RankingSortBy,
   RelationshipStatus,
+  SaidaRecord,
   SendMessagePayload,
   SocialOverview,
   StudentSearchResult,
-  RankingPreferences,
-  SaidaRecord,
 } from './types';
 
 const SESSION_STORAGE_KEY = 'nsac_expressive_session_v2';
@@ -151,6 +166,16 @@ export function saveCachedResource<T>(
   } catch {
     // ignore quota errors
   }
+  const ttlMs = routeKey.startsWith('boletim') ? OFFLINE_TTL_MS.boletim : OFFLINE_TTL_MS.auxiliary;
+  void putOfflineEntry({
+    accountId,
+    routeKey,
+    data: resource.data,
+    etag: resource.etag,
+    fetchedAt: resource.cachedAt,
+    validatedAt: resource.cachedAt,
+    ttlMs,
+  });
 }
 
 export function clearAccountCache(accountId: number): void {
@@ -167,6 +192,7 @@ export function clearAccountCache(accountId: number): void {
   } catch {
     // ignore
   }
+  void clearAccountOfflineStore(accountId);
 }
 
 async function parseErrorResponse(res: Response): Promise<NsacApiClientError> {
@@ -226,6 +252,8 @@ export async function logoutNsacSession(token: string): Promise<void> {
       },
     });
   } finally {
+    rankingPrefsCache = null;
+    invalidateCompareCache();
     saveStoredSession(null);
   }
 }
@@ -257,10 +285,30 @@ export async function fetchWithEtagCache<T>(options: {
     ? `${base}${options.path}${options.path.includes('?') ? '&' : '?'}refresh=true`
     : `${base}${options.path}`;
 
-  const res = await fetch(url, {
-    method: 'GET',
-    headers,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+    reportNetworkStatus(true);
+  } catch (err) {
+    reportNetworkStatus(false);
+    if (!options.forceRefresh) {
+      if (existing) return existing;
+      const idb = await getOfflineEntry<T>(options.accountId, options.routeKey);
+      if (idb) {
+        return {
+          data: idb.data,
+          etag: idb.etag,
+          cachedAt: idb.validatedAt,
+          nextPollHintSecs: 300,
+          lastStatus: 304,
+        };
+      }
+    }
+    throw err;
+  }
 
   if (res.status === 304 && existing) {
     const updated: CachedResource<T> = {
@@ -674,14 +722,48 @@ export async function checkServerHealth(): Promise<boolean> {
   }
 }
 
-export async function fetchRankingPreferences(token: string): Promise<RankingPreferences> {
+interface CachedEntry<T> {
+  data: T;
+  etag: string | null;
+  fetchedAt: number;
+}
+
+let rankingPrefsCache: (CachedEntry<RankingPreferences> & { token: string }) | null = null;
+
+export function getCachedRankingPreferences(token: string): RankingPreferences | null {
+  if (rankingPrefsCache && rankingPrefsCache.token === token) {
+    return rankingPrefsCache.data;
+  }
+  return null;
+}
+
+export async function fetchRankingPreferences(
+  token: string,
+  options?: { forceRefresh?: boolean }
+): Promise<RankingPreferences> {
   const base = getApiBaseUrl();
+  const existing = rankingPrefsCache && rankingPrefsCache.token === token ? rankingPrefsCache : null;
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  if (!options?.forceRefresh && existing?.etag) {
+    headers['If-None-Match'] = existing.etag;
+  }
   const res = await fetch(`${base}/api/v1/account/ranking-preferences`, {
     method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
+    headers,
   });
+  if (res.status === 304 && existing) {
+    existing.etag = res.headers.get('etag') ?? existing.etag;
+    existing.fetchedAt = Date.now();
+    return existing.data;
+  }
   if (!res.ok) throw await parseErrorResponse(res);
   const env = (await res.json()) as ApiSuccessEnvelope<RankingPreferences>;
+  rankingPrefsCache = {
+    token,
+    data: env.data,
+    etag: res.headers.get('etag') ?? existing?.etag ?? null,
+    fetchedAt: Date.now(),
+  };
   return env.data;
 }
 
@@ -706,35 +788,476 @@ export async function updateRankingPreferences(
   });
   if (!res.ok) throw await parseErrorResponse(res);
   const env = (await res.json()) as ApiSuccessEnvelope<RankingPreferences>;
+  rankingPrefsCache = {
+    token,
+    data: env.data,
+    etag: res.headers.get('etag') ?? null,
+    fetchedAt: Date.now(),
+  };
+  invalidateCompareCache();
   return env.data;
+}
+
+export interface CompareLeaderboardParams {
+  scope?: RankingScope;
+  sortBy?: RankingSortBy;
+  commonOnly?: boolean | null;
+  year?: number;
+  bimester?: number | null;
+  subject?: string;
+  peerId?: number | null;
+  forceRefresh?: boolean;
+}
+
+export interface PeerComparisonParams {
+  scope?: RankingScope;
+  year?: number;
+  bimester?: number | null;
+  commonOnly?: boolean | null;
+  subject?: string;
+  forceRefresh?: boolean;
+}
+
+const COMPARE_CACHE_MAX_ENTRIES = 60;
+let activeCompareToken: string | null = null;
+const compareCache = new Map<string, CachedEntry<ComparisonSummaryResponse>>();
+const peerComparisonCache = new Map<string, CachedEntry<PeerComparisonDetail>>();
+const classroomRankingCache = new Map<string, CachedEntry<ClassroomRankingResponse>>();
+const classroomComparisonCache = new Map<string, CachedEntry<ClassroomComparisonDetail>>();
+
+function syncCompareToken(token: string): void {
+  if (activeCompareToken !== token) {
+    compareCache.clear();
+    peerComparisonCache.clear();
+    classroomRankingCache.clear();
+    classroomComparisonCache.clear();
+    activeCompareToken = token;
+  }
+}
+
+function buildCompareCacheKey(params: CompareLeaderboardParams = {}): string {
+  const scope = params.scope ?? 'class';
+  const sortBy = params.sortBy ?? 'personal_average';
+  const commonOnly = typeof params.commonOnly === 'boolean' ? String(params.commonOnly) : 'auto';
+  const year = params.year ?? 'curr';
+  const bimester = params.bimester ?? 0;
+  const subject = (params.subject ?? '').trim().toLowerCase();
+  const peerId = params.peerId ?? '';
+  return `${scope}|${sortBy}|${commonOnly}|${year}|${bimester}|${subject}|${peerId}`;
+}
+
+function buildPeerCacheKey(peerId: number, params: PeerComparisonParams = {}): string {
+  const commonOnly = typeof params.commonOnly === 'boolean' ? String(params.commonOnly) : 'auto';
+  const year = params.year ?? 'curr';
+  const bimester = params.bimester ?? 0;
+  const subject = (params.subject ?? '').trim().toLowerCase();
+  return `${peerId}|${commonOnly}|${year}|${bimester}|${subject}`;
+}
+
+function trimMap<K, V>(map: Map<K, V>, maxEntries: number): void {
+  while (map.size > maxEntries) {
+    const oldestKey = map.keys().next().value;
+    if (oldestKey === undefined) break;
+    map.delete(oldestKey);
+  }
+}
+
+export function getCachedCompareLeaderboard(
+  params: CompareLeaderboardParams = {}
+): ComparisonSummaryResponse | null {
+  return compareCache.get(buildCompareCacheKey(params))?.data ?? null;
+}
+
+export function getCachedPeerComparison(
+  peerId: number,
+  params: PeerComparisonParams = {}
+): PeerComparisonDetail | null {
+  return peerComparisonCache.get(buildPeerCacheKey(peerId, params))?.data ?? null;
+}
+
+export function invalidateCompareCache(): void {
+  compareCache.clear();
+  peerComparisonCache.clear();
+  classroomRankingCache.clear();
+  classroomComparisonCache.clear();
+}
+
+export async function fetchCustomSliceAnalytics(
+  token: string,
+  params: {
+    school_year?: number;
+    subjects?: string[];
+    bimesters?: number[];
+  }
+): Promise<CustomSliceAnalyticsResponse> {
+  const res = await fetch('/api/v1/compare/custom-analytics', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  const envelope = (await res.json()) as { data?: CustomSliceAnalyticsResponse };
+  if (!envelope.data) {
+    throw new Error('Resposta inválida de análise personalizada.');
+  }
+  return envelope.data;
 }
 
 export async function fetchCompareLeaderboard(
   token: string,
-  params: {
-    scope?: 'class' | 'course' | 'school';
-    year?: number;
-    bimester?: number | null;
-    subject?: string;
-    peerId?: number | null;
-  } = {},
+  params: CompareLeaderboardParams = {},
   signal?: AbortSignal
 ): Promise<ComparisonSummaryResponse> {
+  syncCompareToken(token);
   const base = getApiBaseUrl();
   const sp = new URLSearchParams();
   if (params.scope) sp.set('scope', params.scope);
+  if (params.sortBy) sp.set('sort_by', params.sortBy);
+  if (typeof params.commonOnly === 'boolean') sp.set('common_only', String(params.commonOnly));
   if (params.year) sp.set('year', String(params.year));
   if (params.bimester) sp.set('bimester', String(params.bimester));
   if (params.subject && params.subject.trim()) sp.set('subject', params.subject.trim());
   if (params.peerId) sp.set('peer_id', String(params.peerId));
   const qs = sp.toString();
-  const res = await fetch(`${base}/api/v1/compare${qs ? `?${qs}` : ''}`, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-    signal,
-  });
+
+  const cacheKey = buildCompareCacheKey(params);
+  const existing = compareCache.get(cacheKey);
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  if (!params.forceRefresh && existing?.etag) {
+    headers['If-None-Match'] = existing.etag;
+  }
+
+  const accountId = loadStoredSession()?.account_id ?? 0;
+  const idbKey = `compare:${cacheKey}`;
+  let res: Response;
+  try {
+    res = await fetch(`${base}/api/v1/compare${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+      headers,
+      signal,
+    });
+    reportNetworkStatus(true);
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    reportNetworkStatus(false);
+    if (existing) return existing.data;
+    if (accountId > 0) {
+      const idb = await getOfflineEntry<ComparisonSummaryResponse>(accountId, idbKey);
+      if (idb) {
+        compareCache.set(cacheKey, { data: idb.data, etag: idb.etag, fetchedAt: idb.validatedAt });
+        return idb.data;
+      }
+    }
+    throw err;
+  }
+
+  if (res.status === 304 && existing) {
+    existing.etag = res.headers.get('etag') ?? existing.etag;
+    existing.fetchedAt = Date.now();
+    if (accountId > 0) {
+      void putOfflineEntry({
+        accountId,
+        routeKey: idbKey,
+        data: existing.data,
+        etag: existing.etag,
+        validatedAt: existing.fetchedAt,
+        ttlMs: OFFLINE_TTL_MS.ranking,
+      });
+    }
+    return existing.data;
+  }
+
   if (!res.ok) throw await parseErrorResponse(res);
   const env = (await res.json()) as ApiSuccessEnvelope<ComparisonSummaryResponse>;
+  const savedEtag = res.headers.get('etag') ?? existing?.etag ?? null;
+  const now = Date.now();
+  compareCache.set(cacheKey, {
+    data: env.data,
+    etag: savedEtag,
+    fetchedAt: now,
+  });
+  trimMap(compareCache, COMPARE_CACHE_MAX_ENTRIES);
+  if (accountId > 0) {
+    void putOfflineEntry({
+      accountId,
+      routeKey: idbKey,
+      data: env.data,
+      etag: savedEtag,
+      fetchedAt: now,
+      validatedAt: now,
+      ttlMs: OFFLINE_TTL_MS.ranking,
+    });
+  }
+
+  if (env.data.my_preferences && (!rankingPrefsCache || rankingPrefsCache.token !== token)) {
+    rankingPrefsCache = {
+      token,
+      data: env.data.my_preferences,
+      etag: null,
+      fetchedAt: Date.now(),
+    };
+  }
+  return env.data;
+}
+
+export async function fetchPeerComparison(
+  token: string,
+  peerId: number,
+  params: PeerComparisonParams = {},
+  signal?: AbortSignal
+): Promise<PeerComparisonDetail> {
+  syncCompareToken(token);
+  const base = getApiBaseUrl();
+  const sp = new URLSearchParams();
+  if (params.year) sp.set('year', String(params.year));
+  if (params.bimester) sp.set('bimester', String(params.bimester));
+  if (typeof params.commonOnly === 'boolean') sp.set('common_only', String(params.commonOnly));
+  if (params.subject && params.subject.trim()) sp.set('subject', params.subject.trim());
+  const qs = sp.toString();
+
+  const cacheKey = buildPeerCacheKey(peerId, params);
+  const existing = peerComparisonCache.get(cacheKey);
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  if (!params.forceRefresh && existing?.etag) {
+    headers['If-None-Match'] = existing.etag;
+  }
+
+  const res = await fetch(`${base}/api/v1/compare/peer/${peerId}${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+    headers,
+    signal,
+  });
+
+  if (res.status === 304 && existing) {
+    existing.etag = res.headers.get('etag') ?? existing.etag;
+    existing.fetchedAt = Date.now();
+    return existing.data;
+  }
+
+  // Graceful fallback to legacy `/api/v1/compare?peer_id=...` ONLY if endpoint is not yet deployed (404/405).
+  if (res.status === 404 || res.status === 405) {
+    const legacy = await fetchCompareLeaderboard(
+      token,
+      {
+        scope: params.scope ?? 'school',
+        year: params.year,
+        bimester: params.bimester,
+        subject: params.subject,
+        commonOnly: params.commonOnly,
+        peerId,
+        forceRefresh: params.forceRefresh,
+      },
+      signal
+    );
+    if (legacy.peer_comparison) {
+      peerComparisonCache.set(cacheKey, {
+        data: legacy.peer_comparison,
+        etag: null,
+        fetchedAt: Date.now(),
+      });
+      trimMap(peerComparisonCache, COMPARE_CACHE_MAX_ENTRIES);
+      return legacy.peer_comparison;
+    }
+    throw new NsacApiClientError('PEER_COMPARISON_UNAVAILABLE', 'Comparação indisponível.', 404);
+  }
+
+  if (!res.ok) throw await parseErrorResponse(res);
+  const env = (await res.json()) as ApiSuccessEnvelope<PeerComparisonDetail>;
+  peerComparisonCache.set(cacheKey, {
+    data: env.data,
+    etag: res.headers.get('etag') ?? existing?.etag ?? null,
+    fetchedAt: Date.now(),
+  });
+  trimMap(peerComparisonCache, COMPARE_CACHE_MAX_ENTRIES);
+  return env.data;
+}
+
+export interface ClassroomRankingParams {
+  scope?: ClassroomRankingScope;
+  sortBy?: ClassroomRankingSortBy;
+  commonOnly?: boolean | null;
+  year?: number;
+  bimester?: number | null;
+  subject?: string;
+  forceRefresh?: boolean;
+}
+
+export interface ClassroomComparisonParams {
+  year?: number;
+  bimester?: number | null;
+  subject?: string;
+  forceRefresh?: boolean;
+}
+
+function buildClassroomRankingCacheKey(params: ClassroomRankingParams = {}): string {
+  const scope = params.scope ?? 'all';
+  const sortBy = params.sortBy ?? 'official_average';
+  const commonOnly = typeof params.commonOnly === 'boolean' ? String(params.commonOnly) : 'auto';
+  const year = params.year ?? 'curr';
+  const bimester = params.bimester ?? 0;
+  const subject = (params.subject ?? '').trim().toLowerCase();
+  return `${scope}|${sortBy}|${commonOnly}|${year}|${bimester}|${subject}`;
+}
+
+function buildClassroomComparisonCacheKey(
+  classCode: string,
+  params: ClassroomComparisonParams = {}
+): string {
+  const year = params.year ?? 'curr';
+  const bimester = params.bimester ?? 0;
+  const subject = (params.subject ?? '').trim().toLowerCase();
+  return `${classCode.trim().toUpperCase()}|${year}|${bimester}|${subject}`;
+}
+
+export function getCachedClassroomRanking(
+  params: ClassroomRankingParams = {}
+): ClassroomRankingResponse | null {
+  return classroomRankingCache.get(buildClassroomRankingCacheKey(params))?.data ?? null;
+}
+
+export function getCachedClassroomComparison(
+  classCode: string,
+  params: ClassroomComparisonParams = {}
+): ClassroomComparisonDetail | null {
+  return classroomComparisonCache.get(buildClassroomComparisonCacheKey(classCode, params))?.data ?? null;
+}
+
+export async function fetchClassroomRanking(
+  token: string,
+  params: ClassroomRankingParams = {},
+  signal?: AbortSignal
+): Promise<ClassroomRankingResponse> {
+  syncCompareToken(token);
+  const base = getApiBaseUrl();
+  const sp = new URLSearchParams();
+  if (params.scope) sp.set('scope', params.scope);
+  if (params.sortBy) sp.set('sort_by', params.sortBy);
+  if (typeof params.commonOnly === 'boolean') sp.set('common_only', String(params.commonOnly));
+  if (params.year) sp.set('year', String(params.year));
+  if (params.bimester) sp.set('bimester', String(params.bimester));
+  if (params.subject && params.subject.trim()) sp.set('subject', params.subject.trim());
+  const qs = sp.toString();
+
+  const cacheKey = buildClassroomRankingCacheKey(params);
+  const existing = classroomRankingCache.get(cacheKey);
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  if (!params.forceRefresh && existing?.etag) {
+    headers['If-None-Match'] = existing.etag;
+  }
+
+  const accountId = loadStoredSession()?.account_id ?? 0;
+  const idbKey = `classrooms:${cacheKey}`;
+  let res: Response;
+  try {
+    res = await fetch(`${base}/api/v1/compare/classrooms${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+      headers,
+      signal,
+    });
+    reportNetworkStatus(true);
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    reportNetworkStatus(false);
+    if (existing) return existing.data;
+    if (accountId > 0) {
+      const idb = await getOfflineEntry<ClassroomRankingResponse>(accountId, idbKey);
+      if (idb) {
+        classroomRankingCache.set(cacheKey, { data: idb.data, etag: idb.etag, fetchedAt: idb.validatedAt });
+        return idb.data;
+      }
+    }
+    throw err;
+  }
+
+  if (res.status === 304 && existing) {
+    existing.etag = res.headers.get('etag') ?? existing.etag;
+    existing.fetchedAt = Date.now();
+    if (accountId > 0) {
+      void putOfflineEntry({
+        accountId,
+        routeKey: idbKey,
+        data: existing.data,
+        etag: existing.etag,
+        validatedAt: existing.fetchedAt,
+        ttlMs: OFFLINE_TTL_MS.ranking,
+      });
+    }
+    return existing.data;
+  }
+
+  if (!res.ok) throw await parseErrorResponse(res);
+  const env = (await res.json()) as ApiSuccessEnvelope<ClassroomRankingResponse>;
+  const savedEtag = res.headers.get('etag') ?? existing?.etag ?? null;
+  const now = Date.now();
+  classroomRankingCache.set(cacheKey, {
+    data: env.data,
+    etag: savedEtag,
+    fetchedAt: now,
+  });
+  trimMap(classroomRankingCache, COMPARE_CACHE_MAX_ENTRIES);
+  if (accountId > 0) {
+    void putOfflineEntry({
+      accountId,
+      routeKey: idbKey,
+      data: env.data,
+      etag: savedEtag,
+      fetchedAt: now,
+      validatedAt: now,
+      ttlMs: OFFLINE_TTL_MS.ranking,
+    });
+  }
+  return env.data;
+}
+
+export async function fetchClassroomComparison(
+  token: string,
+  classCode: string,
+  params: ClassroomComparisonParams = {},
+  signal?: AbortSignal
+): Promise<ClassroomComparisonDetail> {
+  syncCompareToken(token);
+  const base = getApiBaseUrl();
+  const sp = new URLSearchParams();
+  if (params.year) sp.set('year', String(params.year));
+  if (params.bimester) sp.set('bimester', String(params.bimester));
+  if (params.subject && params.subject.trim()) sp.set('subject', params.subject.trim());
+  const qs = sp.toString();
+
+  const cacheKey = buildClassroomComparisonCacheKey(classCode, params);
+  const existing = classroomComparisonCache.get(cacheKey);
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  if (!params.forceRefresh && existing?.etag) {
+    headers['If-None-Match'] = existing.etag;
+  }
+
+  const res = await fetch(
+    `${base}/api/v1/compare/classrooms/${encodeURIComponent(classCode)}${qs ? `?${qs}` : ''}`,
+    {
+      method: 'GET',
+      headers,
+      signal,
+    }
+  );
+
+  if (res.status === 304 && existing) {
+    existing.etag = res.headers.get('etag') ?? existing.etag;
+    existing.fetchedAt = Date.now();
+    return existing.data;
+  }
+
+  if (!res.ok) throw await parseErrorResponse(res);
+  const env = (await res.json()) as ApiSuccessEnvelope<ClassroomComparisonDetail>;
+  classroomComparisonCache.set(cacheKey, {
+    data: env.data,
+    etag: res.headers.get('etag') ?? existing?.etag ?? null,
+    fetchedAt: Date.now(),
+  });
+  trimMap(classroomComparisonCache, COMPARE_CACHE_MAX_ENTRIES);
   return env.data;
 }
 
@@ -752,22 +1275,102 @@ export async function fetchPublicProfile(token: string, accountId: number): Prom
 
 /**
  * Profile images need the bearer token, so `<img src>` can't load them directly: they are fetched
- * once, kept as object URLs for the session (the URL is versioned, so it never goes stale) and
- * shared by every avatar showing the same person.
+ * once, persisted in the browser Cache API (`n2sac-media-v1`, keyed by versioned URL), kept as
+ * object URLs for the session, and shared by every avatar showing the same person. Permanent
+ * 403/404 responses are negative-cached for 10 minutes to prevent retry storms.
  */
+const MEDIA_CACHE_NAME = 'n2sac-media-v1';
+const FAILED_IMAGE_TTL_MS = 10 * 60 * 1000;
 const imageCache = new Map<string, Promise<string | null>>();
+const resolvedImageCache = new Map<string, string>();
+const failedImagePaths = new Map<string, number>();
+
+export function getCachedProfileImage(path: string | null | undefined): string | null {
+  if (!path) return null;
+  return resolvedImageCache.get(path) ?? null;
+}
+
+async function openMediaCache(): Promise<Cache | null> {
+  try {
+    if (typeof window !== 'undefined' && 'caches' in window && window.caches) {
+      return await window.caches.open(MEDIA_CACHE_NAME);
+    }
+  } catch {
+    // Cache API unavailable (e.g., restricted context)
+  }
+  return null;
+}
 
 export function loadProfileImage(token: string, path: string): Promise<string | null> {
+  const existingUrl = resolvedImageCache.get(path);
+  if (existingUrl) return Promise.resolve(existingUrl);
+
+  const failedAt = failedImagePaths.get(path);
+  if (failedAt !== undefined) {
+    if (Date.now() - failedAt < FAILED_IMAGE_TTL_MS) {
+      return Promise.resolve(null);
+    }
+    failedImagePaths.delete(path);
+  }
+
   const cached = imageCache.get(path);
   if (cached) return cached;
+
   const base = getApiBaseUrl();
-  const pending = fetch(`${base}${path}`, { headers: { Authorization: `Bearer ${token}` } })
-    .then(async (res) => (res.ok ? URL.createObjectURL(await res.blob()) : null))
-    .catch(() => null)
-    .then((url) => {
-      if (!url) imageCache.delete(path); // retry on the next mount
-      return url;
-    });
+  const fullUrl = `${base}${path}`;
+
+  const pending = (async (): Promise<string | null> => {
+    const cache = await openMediaCache();
+    if (cache) {
+      try {
+        const hit = await cache.match(fullUrl);
+        if (hit && hit.ok) {
+          const objectUrl = URL.createObjectURL(await hit.blob());
+          resolvedImageCache.set(path, objectUrl);
+          return objectUrl;
+        }
+      } catch {
+        // Ignore Cache API read errors and fall through to network
+      }
+    }
+
+    let res: Response;
+    try {
+      res = await fetch(fullUrl, { headers: { Authorization: `Bearer ${token}` } });
+    } catch {
+      imageCache.delete(path); // network error: allow retry on next mount
+      return null;
+    }
+
+    if (res.status === 403 || res.status === 404) {
+      failedImagePaths.set(path, Date.now());
+      imageCache.delete(path);
+      return null;
+    }
+
+    if (!res.ok) {
+      imageCache.delete(path); // 5xx or transient error: allow retry on next mount
+      return null;
+    }
+
+    if (cache) {
+      try {
+        await cache.put(fullUrl, res.clone());
+      } catch {
+        // Ignore quota / Cache API write errors
+      }
+    }
+
+    try {
+      const objectUrl = URL.createObjectURL(await res.blob());
+      resolvedImageCache.set(path, objectUrl);
+      return objectUrl;
+    } catch {
+      imageCache.delete(path);
+      return null;
+    }
+  })();
+
   imageCache.set(path, pending);
   return pending;
 }
@@ -802,6 +1405,13 @@ export async function updatePrivacy(
   });
   if (!res.ok) throw await parseErrorResponse(res);
   const env = (await res.json()) as ApiSuccessEnvelope<RankingPreferences>;
+  rankingPrefsCache = {
+    token,
+    data: env.data,
+    etag: res.headers.get('etag') ?? null,
+    fetchedAt: Date.now(),
+  };
+  invalidateCompareCache();
   return env.data;
 }
 
@@ -1210,6 +1820,151 @@ export async function markAnnouncementRead(token: string, id: number): Promise<n
   if (!res.ok) throw await parseErrorResponse(res);
   const env = (await res.json()) as ApiSuccessEnvelope<{ read_count: number }>;
   return env.data.read_count;
+}
+
+export async function fetchDevAnnouncements(
+  token: string,
+  limit = 50
+): Promise<import('./types').DevAnnouncementsResponse> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/dev-announcements?limit=${limit}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  const env = (await res.json()) as ApiSuccessEnvelope<import('./types').DevAnnouncementsResponse>;
+  return env.data;
+}
+
+export async function createDevAnnouncement(
+  token: string,
+  payload: {
+    title: string;
+    body: string;
+    tag?: string;
+    pinned?: boolean;
+    send_push?: boolean;
+    image_data_url?: string | null;
+    poll_options?: string[];
+  }
+): Promise<import('./types').DevAnnouncementItem> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/dev-announcements`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  const env = (await res.json()) as ApiSuccessEnvelope<import('./types').DevAnnouncementItem>;
+  return env.data;
+}
+
+export async function deleteDevAnnouncement(token: string, id: number): Promise<void> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/dev-announcements/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function markDevAnnouncementRead(token: string, id: number): Promise<void> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/dev-announcements/${id}/read`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function toggleDevAnnouncementReaction(
+  token: string,
+  id: number,
+  emoji: string
+): Promise<import('./types').DevAnnouncementReaction[]> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/dev-announcements/${id}/reaction`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ emoji }),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  const env = (await res.json()) as ApiSuccessEnvelope<{
+    reactions: import('./types').DevAnnouncementReaction[];
+  }>;
+  return env.data.reactions;
+}
+
+export async function voteDevAnnouncementPoll(
+  token: string,
+  id: number,
+  option_id: number
+): Promise<import('./types').DevAnnouncementPollOption[]> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/dev-announcements/${id}/poll/vote`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ option_id }),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  const env = (await res.json()) as ApiSuccessEnvelope<{
+    poll_options: import('./types').DevAnnouncementPollOption[];
+  }>;
+  return env.data.poll_options;
+}
+
+export async function fetchDevAnnouncementComments(
+  token: string,
+  id: number
+): Promise<import('./types').DevAnnouncementComment[]> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/dev-announcements/${id}/comments`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  const env = (await res.json()) as ApiSuccessEnvelope<{
+    comments: import('./types').DevAnnouncementComment[];
+  }>;
+  return env.data.comments;
+}
+
+export async function createDevAnnouncementComment(
+  token: string,
+  id: number,
+  body: string
+): Promise<import('./types').DevAnnouncementComment> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/dev-announcements/${id}/comments`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ body }),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  const env = (await res.json()) as ApiSuccessEnvelope<import('./types').DevAnnouncementComment>;
+  return env.data;
+}
+
+export async function deleteDevAnnouncementComment(
+  token: string,
+  commentId: number
+): Promise<void> {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/dev-announcements/comments/${commentId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
 }
 
 export async function setAnnouncementReaction(

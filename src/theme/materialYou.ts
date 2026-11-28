@@ -217,6 +217,32 @@ export function normalizeHexColor(raw?: string | null): string | null {
 export function probeSystemDynamicColor(): AndroidDynamicColorPayload | null {
   if (typeof window === 'undefined' || typeof document === 'undefined') return null;
 
+  // 1a. Synchronous native Android 12+ bridge pull (avoids cold-start evaluateJavascript race).
+  try {
+    const nativeThemeBridge = (window as unknown as {
+      NsacAndroidTheme?: { getSystemDynamicColorJson?: () => string };
+    }).NsacAndroidTheme;
+    if (nativeThemeBridge && typeof nativeThemeBridge.getSystemDynamicColorJson === 'function') {
+      const rawJson = nativeThemeBridge.getSystemDynamicColorJson();
+      if (rawJson) {
+        const parsed = JSON.parse(rawJson) as AndroidDynamicColorPayload;
+        const hex = normalizeHexColor(parsed?.seedHex);
+        if (hex) {
+          return {
+            seedHex: hex,
+            secondaryHex: normalizeHexColor(parsed.secondaryHex) ?? undefined,
+            tertiaryHex: normalizeHexColor(parsed.tertiaryHex) ?? undefined,
+            isSystemDark: parsed.isSystemDark,
+            source: 'android-aosp',
+          };
+        }
+      }
+    }
+  } catch {
+    // Fall through to pushed global or CSS AccentColor.
+  }
+
+  // 1b. Pushed native bridge global (`window.__NSAC_ANDROID_DYNAMIC_COLOR__`).
   const nativeBridge = window.__NSAC_ANDROID_DYNAMIC_COLOR__;
   if (nativeBridge) {
     if (typeof nativeBridge === 'string') {

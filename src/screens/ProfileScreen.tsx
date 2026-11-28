@@ -11,7 +11,7 @@ import {
   type UserProfileData,
 } from '../api/nsacClient';
 import { openExternalUrl, preopenTabForWeb } from '../platform/openExternal';
-import type { AccountProfileResponse } from '../api/types';
+import type { AccountProfileResponse, RankingPreferences } from '../api/types';
 import { useM3Theme } from '../theme/ThemeContext';
 import { EnhancedMorphButton, ExpressiveSegmentedCard } from '../components/expressive/ExpressivePrimitives';
 import { MorphingShapeIndicator } from '../components/expressive/ShapeMorph';
@@ -20,6 +20,10 @@ import { PrivacySettingsCard } from '../components/PrivacySettingsCard';
 import { ProfileConnectionsCard } from '../components/profile/ProfileConnectionsCard';
 import { SocialHubCard } from '../components/social/SocialHubCard';
 import { compressImageToDataUrl } from '../utils/imageCompress';
+import {
+  PrivacyDataTransparencyModal,
+  TransparencyTriggerButton,
+} from '../components/TransparencyModal';
 
 export function extractFirstNameFromEmail(email?: string | null): string {
   if (!email) return 'Aluno';
@@ -45,6 +49,8 @@ export const ProfileScreen: React.FC<{
   onLogout: () => void;
   refreshSignal?: number;
   onRefreshingChange?: (busy: boolean) => void;
+  rankingPreferences?: RankingPreferences | null;
+  onRankingPreferencesUpdated?: (prefs: RankingPreferences) => void;
 }> = ({
   token,
   accountId,
@@ -53,6 +59,8 @@ export const ProfileScreen: React.FC<{
   onLogout,
   refreshSignal = 0,
   onRefreshingChange,
+  rankingPreferences,
+  onRankingPreferencesUpdated,
 }) => {
   const { tokens, isMaterialYou } = useM3Theme();
   const initialCached = loadCachedUserProfile(accountId);
@@ -64,6 +72,7 @@ export const ProfileScreen: React.FC<{
   const [saving, setSaving] = useState(false);
   const showSaving = useMinimumBusy(saving);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [showPrivacyTransparency, setShowPrivacyTransparency] = useState(false);
   const onRefreshingChangeRef = useRef(onRefreshingChange);
   onRefreshingChangeRef.current = onRefreshingChange;
 
@@ -423,7 +432,58 @@ export const ProfileScreen: React.FC<{
 
       <SocialHubCard token={token} />
 
-      <PrivacySettingsCard token={token} refreshSignal={refreshSignal} />
+      <PrivacySettingsCard
+        token={token}
+        refreshSignal={refreshSignal}
+        initialPreferences={rankingPreferences}
+        onPreferencesUpdated={onRankingPreferencesUpdated}
+      />
+
+      {/* Contextual Data & Privacy Transparency Banner */}
+      <ExpressiveSegmentedCard index={0} total={1} style={{ padding: '14px 18px' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: isMaterialYou ? 12 : 8,
+                backgroundColor: tokens.primaryContainer,
+                color: tokens.onPrimaryContainer,
+                display: 'grid',
+                placeItems: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <ShieldCheck size={17} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 800, fontSize: '0.88rem', color: tokens.onSurface }}>
+                Transparência & Uso de Dados
+              </div>
+              <div style={{ fontSize: '0.76rem', color: tokens.onSurfaceVariant, marginTop: 1 }}>
+                Veja como protegemos sua conta do NSAC, o que guardamos e o que o Modo Invisível bloqueia.
+              </div>
+            </div>
+          </div>
+          <TransparencyTriggerButton
+            label="Entender privacidade"
+            onClick={() => setShowPrivacyTransparency(true)}
+          />
+        </div>
+      </ExpressiveSegmentedCard>
+
+      {showPrivacyTransparency && (
+        <PrivacyDataTransparencyModal onClose={() => setShowPrivacyTransparency(false)} />
+      )}
 
       {/* Mobile: logout lives at the end of the profile (desktop keeps it in the rail footer). */}
       <div className="mobile-only-btn" style={{ display: 'flex', justifyContent: 'center', paddingTop: 4 }}>
